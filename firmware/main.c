@@ -1,13 +1,25 @@
-#include <avr/interrupts.h>
+#include <avr/interrupt.h>
 #include <avr/io.h>
-#include <avr/delay.h>
+#include <util/delay.h>
 #include <avr/sleep.h>
+#include "lang.h"
+#include <avr/eeprom.h>
 
-void main(void)
+#include "lcd.h"
+
+const uint32_t dds_max EEMEM = 50e6;
+
+int main(void)
 {
-    setup();
+    lcd_init();
+
+    lcd_eep_write(s_title);
+    lcd_line(1);
+    lcd_eep_write(s_author);
 
     while(1) {
-        loop();
+        /* loop */
     }
+
+    return 0;
 }
