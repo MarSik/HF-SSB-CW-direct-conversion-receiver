@@ -69,6 +69,7 @@ volatile struct _state {
 #define ROTARY_A 1
 #define ROTARY_B 2
 #define ROTARY_SHIFT 1 // how much bits must be shifted left to get AB on the two LSB (mask 0b11)
+#define ROTARY_DIR 1 //1 or -1 if need to reverse rotation arises
 
 #define BUTTON_PORT PORTC
 #define BUTTON_PIN PINC
@@ -130,7 +131,7 @@ ISR(PCINT2_vect)
         else f_step *= 10;
     }
 
-    f += -1 * direction(state.rotary_old, rotary_new) * f_step;
+    f += ROTARY_DIR * direction(state.rotary_old, rotary_new) * f_step;
 
     if ((f < 1e4*10) || (f>(0xffffffff - F_MAX))) f = 1e4*10;
     else if (f>F_MAX) f = F_MAX;
@@ -186,6 +187,8 @@ int main(void)
     char buffer[9];
     uint8_t i;
 
+    cli();
+
     DDS_DDR |= _BV(DDS_CS) | _BV(DDS_SCK) | _BV(DDS_MOSI);
     DDS_PORT |= _BV(DDS_CS) | _BV(DDS_SCK); // CS SCK idle high
 
@@ -193,24 +196,24 @@ int main(void)
     IR_PORT &= ~_BV(IR_DATA);
 
     ROTARY_DDR &= ~(_BV(ROTARY_BUTTON) | _BV(ROTARY_A) | _BV(ROTARY_B));
-    ROTARY_PORT &= ~(_BV(ROTARY_BUTTON) | _BV(ROTARY_A) | _BV(ROTARY_B));
+    ROTARY_PORT |= _BV(ROTARY_BUTTON) | _BV(ROTARY_A) | _BV(ROTARY_B); //pull ups
 
     BUTTON_DDR &= ~(_BV(BUTTON_1) | _BV(BUTTON_2) | _BV(BUTTON_3) | _BV(BUTTON_4));
-    BUTTON_PORT &= ~(_BV(BUTTON_1) | _BV(BUTTON_2) | _BV(BUTTON_3) | _BV(BUTTON_4));
+    BUTTON_PORT |= _BV(BUTTON_1) | _BV(BUTTON_2) | _BV(BUTTON_3) | _BV(BUTTON_4); //pull ups
 
     FILTER_DDR |= _BV(FILTER_CW) | _BV(FILTER_SSB) | _BV(DDS_MOSI);
     FILTER_PORT &= ~(_BV(FILTER_CW) | _BV(FILTER_SSB));
 
-    /* rotary encoder pins are change interrupt 18, 19, 20 */
+    /* rotary encoder pins are change interrupt 16, 17, 18 */
+    /* button interrupt pins are 19, 20, 21, 22 */
     PCICR |= _BV(PCIE2);
-    PCMSK2 |= _BV(PCINT18) | _BV(PCINT19) | _BV(PCINT20);
+    PCMSK2 |= _BV(PCINT16) | _BV(PCINT17) | _BV(PCINT18) | _BV(PCINT19) | _BV(PCINT20) | _BV(PCINT21) | _BV(PCINT22);
 
     set_cw();
-
-    sei();
-
     lcd_init();
     cs_done();
+
+    sei();
 
     lcd_write(s_title);
     lcd_line(1);
