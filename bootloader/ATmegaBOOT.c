@@ -76,10 +76,10 @@
 #include <avr/boot.h>
 
 #ifdef ADABOOT
-    #define NUM_LED_FLASHES 3
-    #define ADABOOT_VER	1
+#define NUM_LED_FLASHES 3
+#define ADABOOT_VER	1
 #else
-    #define NUL_LED_FLASHES 3
+#define NUL_LED_FLASHES 3
 #endif
 
 
@@ -94,7 +94,7 @@
 /* never allow AVR Studio to do an update !!!! */
 #define HW_VER	 0x02
 #define SW_MAJOR 0x01
-#define SW_MINOR 0x10
+#define SW_MINOR 0x11
 
 /* onboard LED is used to indicate, that the bootloader was entered (3x flashing) */
 /* if monitor functions are included, LED goes on after monitor was entered */
@@ -120,8 +120,8 @@
 #define SIG3	0x08
 #endif
 
-#define PAGE_SIZE		0x080U   //128 words
-#define PAGE_SIZE_BYTES	0x100U   //256 bytes
+#define PAGE_SIZE	  0x080U        //128 words
+#define PAGE_SIZE_BYTES   (PAGE_SIZE*2) //256 bytes
 
 /* function prototypes */
 void putch(char);
@@ -152,7 +152,7 @@ struct flags_struct
     unsigned rampz  : 1;
 } flags;
 
-uint8_t buff[256];
+uint8_t buff[PAGE_SIZE_BYTES];
 
 uint8_t error_count = 0;
 uint8_t sreg;
@@ -164,7 +164,7 @@ int main(void)
 {
     uint8_t ch,ch2;
     uint16_t w;
-	uint16_t i;
+    uint16_t i;
 	
     asm volatile("nop\n\t");
 
@@ -177,147 +177,154 @@ int main(void)
 
     // Check if the WDT was used to reset, in which case we dont bootload and skip straight to the code. woot.
     if (! (ch &  (_BV(EXTRF) | _BV(PORF)))) // if its a not an external or power on reset...
-      app_start();  // skip bootloader
+        app_start();  // skip bootloader
 #endif
 
 
-	//initialize our serial port.
+    //initialize our serial port.
     UBRR0L = (uint8_t)(F_CPU/(BAUD_RATE*16L)-1);
     UBRR0H = (F_CPU/(BAUD_RATE*16L)-1) >> 8;
-    UCSR0B = (1<<RXEN0) | (1<<TXEN0);
-    UCSR0C = (1<<UCSZ00) | (1<<UCSZ01);
+    UCSR0B = _BV(RXEN0) | _BV(TXEN0);
+    UCSR0C = _BV(UCSZ00) | _BV(UCSZ01);
 
     /* Enable internal pull-up resistor on pin D0 (RX), in order
-    to supress line noise that prevents the bootloader from
-    timing out (DAM: 20070509) */
+       to supress line noise that prevents the bootloader from
+       timing out (DAM: 20070509) */
     DDRD &= ~_BV(PIND0);
     PORTD |= _BV(PIND0);
 
     /* set LED pin as output */
     LED_DDR |= _BV(LED);
 
-	    /* flash onboard LED to signal entering of bootloader                   */
-	    /* ADABOOT will do two series of flashes. first 4 - signifying ADABOOT  */
-	    /* then a pause and another flash series signifying ADABOOT sub-version */
+    /* flash onboard LED to signal entering of bootloader                   */
+    /* ADABOOT will do two series of flashes. first 4 - signifying ADABOOT  */
+    /* then a pause and another flash series signifying ADABOOT sub-version */
 
 
-	flash_led(NUM_LED_FLASHES);
+    flash_led(NUM_LED_FLASHES);
 
-	#ifdef	ADABOOT
-		flash_led(ADABOOT_VER);		// BBR 9/13/2008
-	#endif 
+#ifdef	ADABOOT
+    flash_led(ADABOOT_VER);		// BBR 9/13/2008
+#endif 
 
     /* forever loop */
     for (;;)
 	{
-		/* get character from UART */
-		ch = getch();
+            /* get character from UART */
+            ch = getch();
 
-		/* A bunch of if...else if... gives smaller code than switch...case ! */
+            /* A bunch of if...else if... gives smaller code than switch...case ! */
 
-		/* Hello is anyone home ? */ 
-		if(ch=='0')
-		    nothing_response();
+            /* Hello is anyone home ? */ 
+            if(ch=='0')
+                nothing_response();
 
 
-		/* Request programmer ID */
-		/* Not using PROGMEM string due to boot block in m128 being beyond 64kB boundry  */
-		/* Would need to selectively manipulate RAMPZ, and it's only 9 characters anyway so who cares.  */
-		else if(ch=='1')
+            /* Request programmer ID */
+            /* Not using PROGMEM string due to boot block in m128 being beyond 64kB boundry  */
+            /* Would need to selectively manipulate RAMPZ, and it's only 9 characters anyway so who cares.  */
+            else if(ch=='1')
 		{
 		    if (getch() == ' ')
 			{
-				putch(0x14);
-				putch('A');
-				putch('V');
-				putch('R');
-				putch(' ');
-				putch('I');
-				putch('S');
-				putch('P');
-				putch(0x10);
-		    }
-			else
+                            putch(0x14);
+                            putch('A');
+                            putch('V');
+                            putch('R');
+                            putch(' ');
+                            putch('I');
+                            putch('S');
+                            putch('P');
+                            putch(0x10);
+                        }
+                    else
 			{
-				if (++error_count == MAX_ERROR_COUNT)
-				    app_start();
-		    }
+                            if (++error_count == MAX_ERROR_COUNT)
+                                app_start();
+                        }
 		}
 
 
-		/* AVR ISP/STK500 board commands  DON'T CARE so default nothing_response */
-		else if(ch=='@')
+            /* AVR ISP/STK500 board commands  DON'T CARE so default nothing_response */
+            else if(ch=='@')
 		{
 		    ch2 = getch();
 		    if (ch2 > 0x85)
-				getch();
+                        getch();
 		    nothing_response();
 		}
 
 
-		/* AVR ISP/STK500 board requests */
-		else if(ch=='A')
+            /* AVR ISP/STK500 board requests */
+            else if(ch=='A')
 		{
 		    ch2 = getch();
 		    if(ch2 == 0x80)
-				byte_response(HW_VER);		// Hardware version
+                        byte_response(HW_VER);		// Hardware version
 		    else if(ch2==0x81)
-				byte_response(SW_MAJOR);	// Software major version
+                        byte_response(SW_MAJOR);	// Software major version
 		    else if(ch2==0x82)
-				byte_response(SW_MINOR);	// Software minor version
+                        byte_response(SW_MINOR);	// Software minor version
 		    else if(ch2==0x98)
-				byte_response(0x03);		// Unknown but seems to be required by avr studio 3.56
+                        byte_response(0x03);		// Unknown but seems to be required by avr studio 3.56
 		    else
-				byte_response(0x00);		// Covers various unnecessary responses we don't care about
+                        byte_response(0x00);		// Covers various unnecessary responses we don't care about
 		}
 
 
-		/* Device Parameters  DON'T CARE, DEVICE IS FIXED  */
-		else if(ch=='B')
+            /* Device Parameters  DON'T CARE, DEVICE IS FIXED  */
+            else if(ch=='B')
 		{
 		    getNch(20);
 		    nothing_response();
 		}
 
 
-		/* Parallel programming stuff  DON'T CARE  */
-		else if(ch=='E')
+            /* Parallel programming stuff  DON'T CARE  */
+            else if(ch=='E')
 		{
 		    getNch(5);
 		    nothing_response();
 		}
 
 
-		/* Enter programming mode  */
-		else if(ch=='P')
+            /* Enter programming mode  */
+            else if(ch=='P')
 		{
 		    nothing_response();
 		}
 
 
-		/* Leave programming mode  */
-		else if(ch=='Q')
+            /* Leave programming mode  */
+            else if(ch=='Q')
 		{
 		    nothing_response();
 #ifdef ADABOOT		
-			// autoreset via watchdog (sneaky!) BBR/LF 9/13/2008
-	  		WDTCSR = _BV(WDE);
-	  		while (1); // 16 ms
+                    // autoreset via watchdog (sneaky!) BBR/LF 9/13/2008
+                    WDTCSR = _BV(WDE);
+                    while (1); // 16 ms
 #endif		
 		}
 
 
-		/* Erase device, don't care as we will erase one page at a time anyway.  */
-		else if(ch=='R')
+            /* Erase device, don't care as we will erase one page at a time anyway.  */
+            else if(ch=='R')
 		{
 		    nothing_response();
 		}
 
 
-		/* Set address, little endian. EEPROM in bytes, FLASH in words  */
-		/* Perhaps extra address bytes may be added in future to support > 128kB FLASH.  */
-		/* This might explain why little endian was used here, big endian used everywhere else.  */
-		else if(ch=='U')
+            /* Check address autoincrement - return success */
+            else if(ch=='S')
+		{
+		    nothing_response();
+		}
+
+
+            /* Set address, little endian. EEPROM in bytes, FLASH in words  */
+            /* Perhaps extra address bytes may be added in future to support > 128kB FLASH.  */
+            /* This might explain why little endian was used here, big endian used everywhere else.  */
+            else if(ch=='U')
 		{
 		    address.byte[0] = getch();
 		    address.byte[1] = getch();
@@ -325,63 +332,126 @@ int main(void)
 		}
 
 
-		/* Universal SPI programming command, disabled.  Would be used for fuses and lock bits.  */
-		else if(ch=='V')
-		{
-		    getNch(4);
-		    byte_response(0x00);
+            /* Universal SPI programming command, disabled.  Would be used for fuses and lock bits.  */
+            else if(ch=='V') {
+		if (getch() == 0x30) {
+                    getch();
+                    ch = getch();
+                    getch();
+                    if (ch == 0) {
+                        byte_response(SIG1);
+                    } else if (ch == 1) {
+                        byte_response(SIG2); 
+                    } else {
+                        byte_response(SIG3);
+                    } 
+		} else {
+                    getNch(3);
+                    byte_response(0x00);
 		}
+            }
 
+            /* Write 1 byte to EEPROM memory  */
+            else if(ch=='a')
+		{
+                    if (getch() == ' ') {
 
-		/* Write memory, length is big endian and is in bytes  */
-		else if(ch=='d')
+                        buff[0] = getch();
+                        
+                        // wait till previous write is finished
+                        while(EECR & _BV(EEPE));
+                        
+                        EEAR = (uint16_t)(void *)address.word;
+                        EEDR = buff[0];
+                        EECR |= _BV(EEMPE);
+                        EECR |= _BV(EEPE);
+                        
+                        address.word++;
+                        
+                        putch(0x14);
+                        putch(0x10);
+                    }
+                    else {
+                        if (++error_count == MAX_ERROR_COUNT)
+                            app_start();
+                    }
+
+                }
+
+            /* Read 1 byte from EEPROM memory  */
+            else if(ch=='q')
+		{
+                    if (getch() == ' ') {
+
+                        // wait till previous write is finished
+                        while(EECR & _BV(EEPE));
+                        
+                        EEAR = (uint16_t)(void *)address.word;
+                        EEDR = buff[0];
+                        EECR |= _BV(EEMPE);
+                        EECR |= _BV(EERE);
+                       
+                        address.word++;
+                        
+                        putch(0x14);
+                        putch(EEDR);
+                        putch(0x10);
+                    }
+                    else {
+                        if (++error_count == MAX_ERROR_COUNT)
+                            app_start();
+                    }
+
+                }
+
+            /* Write memory, length is big endian and is in bytes  */
+            else if(ch=='d')
 		{
 		    length.byte[1] = getch();
 		    length.byte[0] = getch();
 	
-		    flags.eeprom = 0;
-		    if (getch() == 'E')
-				flags.eeprom = 1;
+                    address.word <<= 1;	//address * 2 -> byte location                                    
 
-			for (i=0; i<PAGE_SIZE; i++)
-				buff[i] = 0;
+		    flags.eeprom = 0;
+		    if (getch() == 'E') {
+                        flags.eeprom = 1;
+                    }
+
+                    for (i=0; i<PAGE_SIZE_BYTES; i++)
+                        buff[i] = 0;
 		
 		    for (w = 0; w < length.word; w++)
 			{
-				// Store data in buffer, can't keep up with serial data stream whilst programming pages
-				buff[w] = getch();
-		    }
+                            // Store data in buffer, can't keep up with serial data stream whilst programming pages
+                            buff[w] = getch();
+                        }
 	
 		    if (getch() == ' ')
 			{
-				if (flags.eeprom)
-				{		                
-					//Write to EEPROM one byte at a time
+                            if (flags.eeprom)
+				{	
+
+                                    //Write to EEPROM one byte at a time
 				    for(w=0;w<length.word;w++)
 					{
-						while(EECR & (1<<EEPE));
+                                            while(EECR & _BV(EEPE));
 					
-						EEAR = (uint16_t)(void *)address.word;
-						EEDR = buff[w];
-						EECR |= (1<<EEMPE);
-						EECR |= (1<<EEPE);
+                                            EEAR = (uint16_t)(void *)address.word;
+                                            EEDR = buff[w];
+                                            EECR |= _BV(EEMPE);
+                                            EECR |= _BV(EEPE);
 
-						address.word++;
-				    }			
+                                            address.word++;
+                                        }			
 				}
-				else
+                            else
 				{
-					//address * 2 -> byte location
-				    address.word = address.word << 1;
-			    
-					//Even up an odd number of bytes
-					if ((length.byte[0] & 0x01))
-						length.word++;
+                                    //Even up an odd number of bytes
+                                    if ((length.byte[0] & 0x01))
+                                        length.word++;
 				
-					// HACKME: EEPE used to be EEWE
 				    //Wait for previous EEPROM writes to complete
-					//while(bit_is_set(EECR,EEPE));
-					while(EECR & (1<<EEPE));
+                                    while(EECR & _BV(EEPE));
 				
 				    asm volatile(
 						 "clr	r17		\n\t"	//page_word_count
@@ -461,85 +531,84 @@ int main(void)
 
 						 );
 				}
-				putch(0x14);
-				putch(0x10);
-		    }
-			else
+                            putch(0x14);
+                            putch(0x10);
+                        }
+                    else
 			{
-				if (++error_count == MAX_ERROR_COUNT)
-				    app_start();
-		    }		
+                            if (++error_count == MAX_ERROR_COUNT)
+                                app_start();
+                        }		
 		}
     
-		/* Read memory block mode, length is big endian.  */
-		else if(ch=='t')
+            /* Read memory block mode, length is big endian.  */
+            else if(ch=='t')
 		{
-			length.byte[1] = getch();
-			length.byte[0] = getch();
+                    length.byte[1] = getch();
+                    length.byte[0] = getch();
 
-			if (getch() == 'E')
-				flags.eeprom = 1;
-			else
-			{
-				flags.eeprom = 0;
-				address.word = address.word << 1;	        // address * 2 -> byte location
-			}
+                    address.word = address.word << 1;	        // address * 2 -> byte location
 
-			// Command terminator
-			if (getch() == ' ')
+                    if (getch() == 'E')
+                        flags.eeprom = 1;
+                    else
+                        flags.eeprom = 0;
+
+                    // Command terminator
+                    if (getch() == ' ')
 			{
-				putch(0x14);
-				for (w=0; w<length.word; w++)
+                            putch(0x14);
+                            for (w=0; w<length.word; w++)
 				{
-					// Can handle odd and even lengths okay
+                                    // Can handle odd and even lengths okay
 				    if (flags.eeprom) 
 					{
-						// Byte access EEPROM read
-						while(EECR & (1<<EEPE));
-						EEAR = (uint16_t)(void *)address.word;
-						EECR |= (1<<EERE);
-						putch(EEDR);
+                                            // Byte access EEPROM read
+                                            while(EECR & _BV(EEPE));
+                                            EEAR = (uint16_t)(void *)address.word;
+                                            EECR |= _BV(EERE);
+                                            putch(EEDR);
 
-						address.word++;
-				    }
+                                            address.word++;
+                                        }
 				    else
 					{
-						if (!flags.rampz)
-							putch(pgm_read_byte_near(address.word));
+                                            if (!flags.rampz)
+                                                putch(pgm_read_byte_near(address.word));
 
-						address.word++;
-				    }
+                                            address.word++;
+                                        }
 				}
-				putch(0x10);
-		    }
+                            putch(0x10);
+                        }
 		}
 
 
-		/* Get device signature bytes  */
-		else if(ch=='u')
+            /* Get device signature bytes  */
+            else if(ch=='u')
 		{
-			if (getch() == ' ')
+                    if (getch() == ' ')
 			{
-				putch(0x14);
-				putch(SIG1);
-				putch(SIG2);
-				putch(SIG3);
-				putch(0x10);
+                            putch(0x14);
+                            putch(SIG1);
+                            putch(SIG2);
+                            putch(SIG3);
+                            putch(0x10);
 			}
-			else
+                    else
 			{
-				if (++error_count == MAX_ERROR_COUNT)
-					app_start();
+                            if (++error_count == MAX_ERROR_COUNT)
+                                app_start();
 			}
 		}
 
 
-		/* Read oscillator calibration byte */
-		else if(ch=='v')
-			byte_response(0x00);
+            /* Read oscillator calibration byte */
+            else if(ch=='v')
+                byte_response(0x00);
 
-		else if (++error_count == MAX_ERROR_COUNT)
-		    app_start();
+            else if (++error_count == MAX_ERROR_COUNT)
+                app_start();
 
 	}
     /* end of forever loop */
@@ -551,18 +620,18 @@ char gethex(void)
     char ah,al;
 
     ah = getch();
-	putch(ah);
+    putch(ah);
     al = getch();
-	putch(al);
+    putch(al);
     
-	if(ah >= 'a')
-		ah = ah - 'a' + 0x0a;
-	else if(ah >= '0')
-		ah -= '0';
+    if(ah >= 'a')
+        ah = ah - 'a' + 0x0a;
+    else if(ah >= '0')
+        ah -= '0';
     if(al >= 'a')
-		al = al - 'a' + 0x0a;
-	else if(al >= '0')
-		al -= '0';
+        al = al - 'a' + 0x0a;
+    else if(al >= '0')
+        al -= '0';
 
     return (ah << 4) + al;
 }
@@ -573,16 +642,16 @@ void puthex(char ch)
     char ah,al;
 
     ah = (ch & 0xf0) >> 4;
-	if(ah >= 0x0a)
-		ah = ah - 0x0a + 'a';
-	else
-		ah += '0';
+    if(ah >= 0x0a)
+        ah = ah - 0x0a + 'a';
+    else
+        ah += '0';
 
     al = (ch & 0x0f);
-	if(al >= 0x0a)
-		al = al - 0x0a + 'a';
-	else
-		al += '0';
+    if(al >= 0x0a)
+        al = al - 0x0a + 'a';
+    else
+        al += '0';
 
     putch(ah);
     putch(al);
@@ -603,20 +672,20 @@ char getch(void)
     uint32_t count = 0;
 
 #ifdef ADABOOT
-	LED_PORT &= ~_BV(LED);          // toggle LED to show activity - BBR/LF 10/3/2007 & 9/13/2008
+    LED_PORT &= ~_BV(LED);          // toggle LED to show activity - BBR/LF 10/3/2007 & 9/13/2008
 #endif
 
     while(!(UCSR0A & _BV(RXC0)))
 	{
-    	/* 20060803 DojoCorp:: Addon coming from the previous Bootloader*/               
-    	/* HACKME:: here is a good place to count times*/
-    	count++;
-    	if (count > MAX_TIME_COUNT)
+            /* 20060803 DojoCorp:: Addon coming from the previous Bootloader*/               
+            /* HACKME:: here is a good place to count times*/
+            count++;
+            if (count > MAX_TIME_COUNT)
     		app_start();
-     }
+        }
 
 #ifdef ADABOOT
-	LED_PORT |= _BV(LED);          // toggle LED to show activity - BBR/LF 10/3/2007 & 9/13/2008
+    LED_PORT |= _BV(LED);          // toggle LED to show activity - BBR/LF 10/3/2007 & 9/13/2008
 #endif
 
     return UDR0;
@@ -628,9 +697,9 @@ void getNch(uint8_t count)
     uint8_t i;
     for(i=0;i<count;i++)
 	{
-		while(!(UCSR0A & _BV(RXC0)));
-		UDR0;
-    }
+            while(!(UCSR0A & _BV(RXC0)));
+            UDR0;
+        }
 }
 
 
@@ -638,15 +707,15 @@ void byte_response(uint8_t val)
 {
     if (getch() == ' ')
 	{
-		putch(0x14);
-		putch(val);
-		putch(0x10);
-    }
-	else
+            putch(0x14);
+            putch(val);
+            putch(0x10);
+        }
+    else
 	{
-		if (++error_count == MAX_ERROR_COUNT)
-		    app_start();
-    }
+            if (++error_count == MAX_ERROR_COUNT)
+                app_start();
+        }
 }
 
 
@@ -654,14 +723,14 @@ void nothing_response(void)
 {
     if (getch() == ' ')
 	{
-		putch(0x14);
-		putch(0x10);
-    }
-	else
+            putch(0x14);
+            putch(0x10);
+        }
+    else
 	{
-		if (++error_count == MAX_ERROR_COUNT)
-		    app_start();
-    }
+            if (++error_count == MAX_ERROR_COUNT)
+                app_start();
+        }
 }
 
 #ifdef ADABOOT
@@ -669,25 +738,25 @@ void nothing_response(void)
 void flash_led(uint8_t count)
 {
     /* flash onboard LED count times to signal entering of bootloader */
-	/* l needs to be volatile or the delay loops below might get      */
-	/* optimized away if compiling with optimizations (DAM).          */
+    /* l needs to be volatile or the delay loops below might get      */
+    /* optimized away if compiling with optimizations (DAM).          */
 	
     volatile uint32_t l;
 
     if (count == 0) {
-      count = ADABOOT;
+        count = ADABOOT;
     }
     
 
-	int8_t i;
+    int8_t i;
     for (i = 0; i < count; ++i) {
-		LED_PORT |= _BV(LED);					// LED on
-		for(l = 0; l < (F_CPU / 1000); ++l);		// delay NGvalue was 1000 for both loops - BBR
-		LED_PORT &= ~_BV(LED);					// LED off
-		for(l = 0; l < (F_CPU / 250); ++l);		// delay asymmteric for ADA BOOT BBR 
-	}
+        LED_PORT |= _BV(LED);					// LED on
+        for(l = 0; l < (F_CPU / 1000); ++l);		// delay NGvalue was 1000 for both loops - BBR
+        LED_PORT &= ~_BV(LED);					// LED off
+        for(l = 0; l < (F_CPU / 250); ++l);		// delay asymmteric for ADA BOOT BBR 
+    }
 
-	for(l = 0; l < (F_CPU / 100); ++l);		    // pause ADA BOOT BBR 
+    for(l = 0; l < (F_CPU / 100); ++l);		    // pause ADA BOOT BBR 
 		
 }
 
@@ -696,21 +765,21 @@ void flash_led(uint8_t count)
 void flash_led(uint8_t count)
 {
     /* flash onboard LED three times to signal entering of bootloader */
-	/* l needs to be volatile or the delay loops below might get
-	optimized away if compiling with optimizations (DAM). */
+    /* l needs to be volatile or the delay loops below might get
+       optimized away if compiling with optimizations (DAM). */
     volatile uint32_t l;
 
     if (count == 0) {
-      count = 3;
+        count = 3;
     }
     
-	int8_t i;
+    int8_t i;
     for (i = 0; i < count; ++i) {
-		LED_PORT |= _BV(LED);
-		for(l = 0; l < (F_CPU / 1000); ++l);
-		LED_PORT &= ~_BV(LED);
-		for(l = 0; l < (F_CPU / 1000); ++l); 
-	}
+        LED_PORT |= _BV(LED);
+        for(l = 0; l < (F_CPU / 1000); ++l);
+        LED_PORT &= ~_BV(LED);
+        for(l = 0; l < (F_CPU / 1000); ++l); 
+    }
 		
 }
 

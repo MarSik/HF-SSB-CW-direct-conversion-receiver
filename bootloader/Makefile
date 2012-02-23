@@ -32,7 +32,7 @@ override LDFLAGS       = -Wl,$(LDSECTION)
 OBJCOPY        = avr-objcopy
 OBJDUMP        = avr-objdump
 
-all: CFLAGS += '-DMAX_TIME_COUNT=800000L>>1' -DADABOOT
+all: CFLAGS += '-DMAX_TIME_COUNT=8000000L>>1' -DADABOOT
 all: $(PROGRAM).hex
 
 $(PROGRAM).hex: $(PROGRAM).elf
