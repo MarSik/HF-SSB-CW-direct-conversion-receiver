@@ -9,42 +9,49 @@ void lcd_put(uint8_t data)
     LCD |= _BV(EN); // set EN high
     _delay_us(100);
 
-    LCD = (LCD & 0x70) + (data >> 4); // write high nibble
+    LCD = (LCD & 0xF0) + ((data >> 4) & 0x0f); // write high nibble
 
-    LCDPIN |= _BV(EN); // flip EN low
+    LCD_PIN |= _BV(EN); // flip EN low
     _delay_us(100);
 
     LCD |= _BV(EN); // set EN high
     _delay_us(100);
 
-    LCD = (LCD & 0x70) + (data & 0x0f); // write low nibble
+    LCD = (LCD & 0xF0) | (data & 0x0f); // write low nibble
 
-    LCDPIN |= _BV(EN); // strobe EN
+    LCD_PIN |= _BV(EN); // strobe EN
     _delay_us(100);
 }
 
 
 void lcd_mode(uint8_t mode)
 {
-    if(mode) LCD |= _BV(RS); // RS high to data mode
+    if(mode == LCD_DATA) LCD |= _BV(RS); // RS high to data mode
     else LCD &= ~_BV(RS); // RS low to command mode
 }
 
 static void lcd_command8(uint8_t data)
 {
-    LCD &= ~_BV(RS); // RS low to command mode
+    lcd_mode(LCD_COMMAND); // LCD to command mode
+
     LCD |= _BV(EN); // set EN high
     _delay_us(100);
 
-    LCD = (LCD & 0x70) + (data >> 4); // write high nibble
+    LCD = (LCD & 0xF0) | ((data >> 4) & 0x0f); // write high nibble
 
-    PIND |= _BV(EN); // flip EN low
+    LCD_PIN |= _BV(EN); // flip EN low
     _delay_us(100);
 }
 
 void lcd_init(void)
 {
+    // set the port to proper direction
+    LCD = LCD & (~(0x0f | _BV(EN) | _BV(RS)));
+    LCD_DDR = LCD_DDR | 0x0f | _BV(EN) | _BV(RS);
+
     _delay_ms(20);
+
+    lcd_mode(LCD_COMMAND);
 
     lcd_command8(0x30); //init 5ms delay
     _delay_ms(5);
@@ -58,14 +65,13 @@ void lcd_init(void)
     lcd_command8(0x20); //preliminary 4bit mode
     _delay_us(45);
 
-    lcd_mode(LCD_COMMAND);
     lcd_put(0x28); //4bit mode, 2 lines 39us delay
     _delay_us(45);
 
     lcd_put(0x08); //display off
     _delay_us(45);
 
-    lcd_put(0x0C); //display off
+    lcd_put(0x0C); //display on
     _delay_us(45);
 
     lcd_put(0x01); //clear
@@ -92,6 +98,7 @@ void lcd_line(uint8_t line)
 void lcd_write(const unsigned char* str)
 {
     lcd_mode(LCD_DATA);
+
     while(*str){
         lcd_put(*str);
         _delay_us(50);

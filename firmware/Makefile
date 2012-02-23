@@ -1,9 +1,9 @@
 # Target device
-MCU = atmega328p
-F_CPU = 16000000
-LFUSE = 0xE1
-HFUSE = 0xDD
-EFUSE = 0xFF
+MCU = atmega644p
+F_CPU = 8000000
+LFUSE = 0xE2
+HFUSE = 0xDA
+EFUSE = 0xFD
 
 # Application files and targets
 TARGET = dds
@@ -24,6 +24,9 @@ CXXSRC =
 
 # Source files in assembly
 ASRC =
+
+# Extra libraries
+LDEXTRA = -lm
 
 # This includes the rest of rules DO NOT DELETE
 -include ~/Dropbox/EDA/Makefile.avr.inc

@@ -8,8 +8,9 @@
  * one port (PORTX) on the mcu
  */
 
-#define LCD PORTD
-#define LCDPIN PIND
+#define LCD PORTA
+#define LCD_PIN PINA
+#define LCD_DDR DDRA
 
 /* LCD data lines are connected to
  *        D4 -- PORTX0
@@ -20,8 +21,8 @@
  * control lines are connected to Px (defined below)
  *  (RW is tied to GND)
  */
-#define RS 4
-#define EN 6
+#define RS 5
+#define EN 4
 
 /*
  * LCD constants
