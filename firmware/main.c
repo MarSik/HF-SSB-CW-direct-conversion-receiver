@@ -10,7 +10,43 @@
 #include "lcd.h"
 
 const uint32_t dds_f = 50e6 * 10;
-#define F_MAX (15e6*10) 
+#define F_MAX (15e6*10)
+#define F_MIN (1e4*10)
+
+#define ROTARY_PORT PORTC
+#define ROTARY_PIN PINC
+#define ROTARY_DDR DDRC
+#define ROTARY_BUTTON 0
+#define ROTARY_A 1
+#define ROTARY_B 2
+#define ROTARY_SHIFT 1 // how much bits must be shifted left to get AB on the two LSB (mask 0b11)
+#define ROTARY_DIR 1 //1 or -1 if need to reverse rotation arises
+
+#define BUTTON_PORT PORTC
+#define BUTTON_PIN PINC
+#define BUTTON_DDR DDRC
+#define BUTTON_1 3
+#define BUTTON_2 4
+#define BUTTON_3 5
+#define BUTTON_4 6
+
+#define FILTER_PORT PORTD
+#define FILTER_DDR DDRD
+#define FILTER_CW 5
+#define FILTER_SSB 4
+
+#define DDS_PORT PORTB
+#define DDS_DDR DDRB
+#define DDS_MISO 6
+#define DDS_MOSI 5
+#define DDS_SCK 7
+#define DDS_CS 4
+
+#define IR_PORT PORTB
+#define IR_DDR DDRB
+#define IR_DATA 2
+#define IR_INT INT2
+
 
 /*
  * State of A abn B switches in rotary encoder are combined to
@@ -62,40 +98,6 @@ volatile struct _state {
     uint8_t rotary_old: 2;
 } state;
 
-#define ROTARY_PORT PORTC
-#define ROTARY_PIN PINC
-#define ROTARY_DDR DDRC
-#define ROTARY_BUTTON 0
-#define ROTARY_A 1
-#define ROTARY_B 2
-#define ROTARY_SHIFT 1 // how much bits must be shifted left to get AB on the two LSB (mask 0b11)
-#define ROTARY_DIR 1 //1 or -1 if need to reverse rotation arises
-
-#define BUTTON_PORT PORTC
-#define BUTTON_PIN PINC
-#define BUTTON_DDR DDRC
-#define BUTTON_1 3
-#define BUTTON_2 4
-#define BUTTON_3 5
-#define BUTTON_4 6
-
-#define FILTER_PORT PORTD
-#define FILTER_DDR DDRD
-#define FILTER_CW 4
-#define FILTER_SSB 5
-
-#define DDS_PORT PORTB
-#define DDS_DDR DDRB
-#define DDS_MISO 6
-#define DDS_MOSI 5
-#define DDS_SCK 7
-#define DDS_CS 4
-
-#define IR_PORT PORTB
-#define IR_DDR DDRB
-#define IR_DATA 2
-#define IR_INT INT2
-
 void set_cw(void)
 {
     FILTER_PORT |= _BV(FILTER_CW);
@@ -133,7 +135,7 @@ ISR(PCINT2_vect)
 
     f += ROTARY_DIR * direction(state.rotary_old, rotary_new) * f_step;
 
-    if ((f < 1e4*10) || (f>(0xffffffff - F_MAX))) f = 1e4*10;
+    if ((f < F_MIN) || (f>(0xffffffff - F_MAX))) f = F_MIN;
     else if (f>F_MAX) f = F_MAX;
 
     state.rotary_old = rotary_new;
@@ -195,10 +197,10 @@ int main(void)
     IR_DDR &= ~_BV(IR_DATA);
     IR_PORT &= ~_BV(IR_DATA);
 
-    ROTARY_DDR &= ~(_BV(ROTARY_BUTTON) | _BV(ROTARY_A) | _BV(ROTARY_B));
+    ROTARY_DDR &= ~(_BV(ROTARY_BUTTON) | _BV(ROTARY_A) | _BV(ROTARY_B)); //inputs
     ROTARY_PORT |= _BV(ROTARY_BUTTON) | _BV(ROTARY_A) | _BV(ROTARY_B); //pull ups
 
-    BUTTON_DDR &= ~(_BV(BUTTON_1) | _BV(BUTTON_2) | _BV(BUTTON_3) | _BV(BUTTON_4));
+    BUTTON_DDR &= ~(_BV(BUTTON_1) | _BV(BUTTON_2) | _BV(BUTTON_3) | _BV(BUTTON_4)); //inputs
     BUTTON_PORT |= _BV(BUTTON_1) | _BV(BUTTON_2) | _BV(BUTTON_3) | _BV(BUTTON_4); //pull ups
 
     FILTER_DDR |= _BV(FILTER_CW) | _BV(FILTER_SSB) | _BV(DDS_MOSI);
@@ -215,9 +217,9 @@ int main(void)
 
     sei();
 
-    lcd_write(s_title);
+    lcd_eep_write(s_title);
     lcd_line(1);
-    lcd_write(s_author);
+    lcd_eep_write(s_author);
 
     //0xF800 // Reset
     dds_write(0xf8, 0x00);
@@ -299,8 +301,8 @@ int main(void)
             }
 
             lcd_line(1);
-            if(state.cw_filter) lcd_write(s_cw);
-            else lcd_write(s_ssb);
+            if(state.cw_filter) lcd_eep_write(s_cw);
+            else lcd_eep_write(s_ssb);
         }
 
     }

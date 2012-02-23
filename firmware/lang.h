@@ -7,10 +7,10 @@
  * Language definitions
  */
 
-const unsigned char s_title[] = "DDS controller 20120203";
-const unsigned char s_author[] = "MarSik";
-const unsigned char s_hex_prefix[] = "0x";
-const unsigned char s_cw[] = "CW ";
-const unsigned char s_ssb[] = "SSB";
+const unsigned char s_title[] EEMEM = "DDS controller 20120203";
+const unsigned char s_author[] EEMEM = "MarSik";
+const unsigned char s_hex_prefix[] EEMEM = "0x";
+const unsigned char s_cw[] EEMEM = "CW ";
+const unsigned char s_ssb[] EEMEM = "SSB";
 
 #endif /* LANG_DDS_02012012_MarSik */
