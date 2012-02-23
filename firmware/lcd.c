@@ -46,8 +46,8 @@ static void lcd_command8(uint8_t data)
 void lcd_init(void)
 {
     // set the port to proper direction
-    LCD = LCD & (~(0x0f | _BV(EN) | _BV(RS)));
-    LCD_DDR = LCD_DDR | 0x0f | _BV(EN) | _BV(RS);
+    LCD &= ~(0x0f | _BV(EN) | _BV(RS));
+    LCD_DDR |= 0x0f | _BV(EN) | _BV(RS);
 
     _delay_ms(20);
 

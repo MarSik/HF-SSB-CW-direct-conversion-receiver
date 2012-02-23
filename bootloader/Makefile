@@ -32,15 +32,15 @@ override LDFLAGS       = -Wl,$(LDSECTION)
 OBJCOPY        = avr-objcopy
 OBJDUMP        = avr-objdump
 
-all: CFLAGS += '-DMAX_TIME_COUNT=8000000L>>1' -DADABOOT
+all: CFLAGS += '-DMAX_TIME_COUNT=800000L>>1' -DADABOOT
 all: $(PROGRAM).hex
 
 $(PROGRAM).hex: $(PROGRAM).elf
 	$(OBJCOPY) -j .text -j .data -O ihex $< $@
-	
+
 $(PROGRAM).elf: $(OBJ)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
-	
+
 $(OBJ): ATmegaBOOT.c
 	avr-gcc $(CFLAGS) $(LDFLAGS) -c -g -O2 -Wall -mmcu=$(MCU_TARGET) ATmegaBOOT.c -o $(PROGRAM).o
 
@@ -55,4 +55,4 @@ $(OBJ): ATmegaBOOT.c
 
 clean:
 	rm -rf *.o *.elf *.lst *.map *.sym *.lss *.eep *.srec *.bin *.hex
-	
+

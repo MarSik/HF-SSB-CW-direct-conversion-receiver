@@ -83,19 +83,31 @@ volatile struct _state {
 #define FILTER_CW 4
 #define FILTER_SSB 5
 
+#define DDS_PORT PORTB
+#define DDS_DDR DDRB
+#define DDS_MISO 6
+#define DDS_MOSI 5
+#define DDS_SCK 7
+#define DDS_CS 4
+
+#define IR_PORT PORTB
+#define IR_DDR DDRB
+#define IR_DATA 2
+#define IR_INT INT2
+
 void set_cw(void)
 {
-    PORTD |= _BV(4);
+    FILTER_PORT |= _BV(FILTER_CW);
     _delay_ms(30);
-    PORTD &= ~3;
+    FILTER_PORT &= ~_BV(FILTER_CW);
     state.cw_filter = 1;
 }
 
 void set_ssb(void)
 {
-    PORTD |= _BV(5);
+    FILTER_PORT |= _BV(FILTER_SSB);
     _delay_ms(30);
-    PORTD &= ~3;
+    PORTD &= ~_BV(FILTER_SSB);
     state.cw_filter = 0;
 }
 
@@ -127,18 +139,6 @@ ISR(PCINT2_vect)
     state.f_changed = 1;
     state.redraw = 1;
 }
-
-#define DDS_PORT PORTB
-#define DDS_DDR DDRB
-#define DDS_MISO 6
-#define DDS_MOSI 5
-#define DDS_SCK 7
-#define DDS_CS 4
-
-#define IR_PORT PORTB
-#define IR_DDR DDRB
-#define IR_DATA 2
-#define IR_INT INT2
 
 unsigned char spi(unsigned char dat) 
 { 
@@ -236,6 +236,7 @@ int main(void)
     dds_write(0xc0, 0x00);
 
     state.redraw = 1;
+    _delay_ms(1000);
     lcd_clear();
 
     while(1) {
