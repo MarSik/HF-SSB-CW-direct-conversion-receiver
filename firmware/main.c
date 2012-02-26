@@ -211,6 +211,10 @@ int main(void)
     PCICR |= _BV(PCIE2);
     PCMSK2 |= _BV(PCINT16) | _BV(PCINT17) | _BV(PCINT18) | _BV(PCINT19) | _BV(PCINT20) | _BV(PCINT21) | _BV(PCINT22);
 
+    /* disable ADC */
+    ACSR |= _BV(ACD);
+    ADCSRA &= ~_BV(ADEN);
+
     set_cw();
     lcd_init();
     cs_done();
@@ -245,8 +249,6 @@ int main(void)
     lcd_clear();
 
     while(1) {
-        while(!state.f_changed && !state.redraw);
-
         if(state.f_changed){
             state.f_changed = 0;
             dds = round(0xffffffff*(double)f/dds_f);
@@ -305,6 +307,10 @@ int main(void)
             else lcd_eep_write(s_ssb);
         }
 
+        /* sleep the cpu to minimize RF noise */
+        set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+        sleep_mode();
+        
     }
 
     return 0;
