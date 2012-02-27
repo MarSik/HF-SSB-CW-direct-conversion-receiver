@@ -1,16 +1,33 @@
-Project XYZ
-============
+Direct Conversion TRX 
+=====================
 
-Author:
-Based on:
+Author: Martin Sivak <mars@montik.net>
+Based on the following projects and books:
+  http://www.qrp.pops.net/popDC.asp
+  http://hem.passagen.se/communication/dds.html
+  EMRFD (http://w7zoi.net)
 
 Schematics is in directory sch/
 Firmware in directory firmware/
-
+Bootloader in directory bootloader/
 
 Goals
 =====
 
+- full TRX for HF bands (mainly 40m and 20m)
+- DDS controlled
+- RX: direct conversion with switchable attenuator and CW/SSB filter
+- TX: CW QRP level output (5W)
+- portable operation
+- external BPF
+- PC interface (probably Icom based to make it compatible with existing tools)
+- IR remote control to supplement integrated buttons
 
-Changelog
-=========
+Hardware
+========
+
+AD9835 DDS (mclk 50Mhz, 14Mhz LPF)
+ATmega 644PA (int. osc. 8Mhz)
+standard LCD 16x2, 4bit mode
+rotary encoder
+4 buttons
