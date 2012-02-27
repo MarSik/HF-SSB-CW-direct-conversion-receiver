@@ -29,5 +29,6 @@ Hardware
 AD9835 DDS (mclk 50Mhz, 14Mhz LPF)
 ATmega 644PA (int. osc. 8Mhz)
 standard LCD 16x2, 4bit mode
+IR demodulator SFH5110-38
 rotary encoder
 4 buttons
