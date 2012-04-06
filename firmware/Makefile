@@ -17,7 +17,7 @@ CEXTRA =
 CXXEXTRA = 
 
 # Source files for C compiler
-SRC = main.c lcd.c
+SRC = bandplan.c main.c lang.c lcd.c
 
 # Source files for C++ compiler
 CXXSRC = 

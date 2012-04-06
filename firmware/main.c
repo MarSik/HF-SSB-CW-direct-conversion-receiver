@@ -2,12 +2,13 @@
 #include <avr/io.h>
 #include <util/delay.h>
 #include <avr/sleep.h>
-#include "lang.h"
 #include <avr/eeprom.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+#include "lang.h"
 #include "lcd.h"
+#include "bandplan.h"
 
 const uint32_t dds_f = 50e6 * 10;
 #define F_MAX (15e6*10)
@@ -188,6 +189,8 @@ int main(void)
     uint32_t dds = 0x00;
     char buffer[9];
     uint8_t i;
+    uint8_t fl;
+    const uint8_t *extra;
 
     cli();
 
@@ -250,6 +253,7 @@ int main(void)
 
     while(1) {
         if(state.f_changed){
+            fl = bandplan(f / 1000, &extra);
             state.f_changed = 0;
             dds = round(0xffffffff*(double)f/dds_f);
 
@@ -266,7 +270,7 @@ int main(void)
             
             // print Mhz
             ultoa((f/10000000), buffer, 10);
-            for(i=2; i>strlen(buffer); i--) lcd_write(" ");
+            for(i=2; i>strlen(buffer); i--) lcd_put(' ');
             lcd_write((unsigned char*)buffer);
             lcd_put('.');
             
