@@ -5,6 +5,7 @@
 #include "spi.h"
 #include "dds.h"
 
+/* base frequency multiplied by 10 */
 const uint32_t dds_f = 50e6 * 10;
 
 static void dds_begin(void)
@@ -50,6 +51,12 @@ void dds_init(void)
     dds_write(0xc0, 0x00);
 }
 
+/* convert frequency to DDS config word
+   frequency is stored as fixed point number
+   with one decimal number
+   eg.
+   7Mhz is 7 000 000 0
+*/
 static uint32_t dds_convf(uint32_t f)
 {
     return round(0xffffffff*(double)f/dds_f);

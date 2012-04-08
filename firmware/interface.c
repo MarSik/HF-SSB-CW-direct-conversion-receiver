@@ -40,9 +40,22 @@ ISR(PCINT2_vect){
         set_cw();
         state |= LCD_REDRAW;
     }
+
     if ((state & ST_CW) && (BUTTON_PIN & _BV(BUTTON_2)) == 0) {
         set_ssb();
         state |= LCD_REDRAW;
+    }
+
+    if ((BUTTON_PIN & _BV(BUTTON_3)) == 0) {
+        step_down();
+    }
+
+    if ((BUTTON_PIN & _BV(BUTTON_4)) == 0) {
+        step_up();
+    }
+
+    if ((ROTARY_PIN & ROTARY_BUTTON) == 0) {
+        
     }
 
     /* get rotary vector[oldB oldA B A]*/
@@ -50,12 +63,12 @@ ISR(PCINT2_vect){
 
     if (ROTARY_LOOKUP_NEXT & _BV(r)) {
         // increase freq
-        freq_offset(F_DIR_UP);
+        freq_step(F_DIR_UP);
     }
 
     else if (ROTARY_LOOKUP_PREV & _BV(r)) {
         // decrease freq
-        freq_offset(F_DIR_DOWN);
+        freq_step(F_DIR_DOWN);
     }
 
     /* debounce

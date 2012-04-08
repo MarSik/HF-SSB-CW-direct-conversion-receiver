@@ -24,7 +24,7 @@ void set_ssb(void)
 }
 
 
-void freq_offset(char dir)
+void freq_step(char dir)
 {
     f += OFFSET_DIR * dir * f_step;
 
@@ -34,6 +34,19 @@ void freq_offset(char dir)
     state |= F_CHANGED | LCD_REDRAW;
 }
 
+void step_up()
+{
+    f_step *= 10;
+    if (f_step > STEP_MAX) f_step = STEP_MAX;
+}
+
+void step_down()
+{
+    f_step /= 10;
+    if (f_step < STEP_MIN) f_step = STEP_MIN;
+}
+
+
 void radio_init(void)
 {
     FILTER_DDR |= _BV(FILTER_CW) | _BV(FILTER_SSB);
@@ -41,7 +54,7 @@ void radio_init(void)
 
     set_cw();
 
-    f = 7000000;
+    f = 70000000;
     f_step = 1000;
 
     state |= F_CHANGED | LCD_REDRAW;
