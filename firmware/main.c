@@ -80,7 +80,6 @@ int main(void)
 
     set_cw();
     lcd_init();
-    cs_done();
     ir_init();
     interface_init();
     dds_init();

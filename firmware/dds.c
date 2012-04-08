@@ -50,14 +50,14 @@ void dds_init(void)
     dds_write(0xc0, 0x00);
 }
 
-static uint32_t inline dds_convf(uint32_t f)
+static uint32_t dds_convf(uint32_t f)
 {
     return round(0xffffffff*(double)f/dds_f);
 }
 
 void dds_f1(uint32_t f)
 {
-    uint32_t dds = dds_convf(f);
+    f = dds_convf(f);
 
     dds_write(0x30, (dds >> 0) & 0xff);
     dds_write(0x21, (dds >> 8) & 0xff);
@@ -67,7 +67,7 @@ void dds_f1(uint32_t f)
 
 void dds_f2(uint32_t f)
 {
-    uint32_t dds = dds_convf(f);
+    f = dds_convf(f);
 
     dds_write(0x34, (dds >> 0) & 0xff);
     dds_write(0x25, (dds >> 8) & 0xff);
