@@ -13,53 +13,7 @@
 #include "interface.h"
 #include "spi.h"
 #include "dds.h"
-
-#define F_MAX (15e6*10)
-#define F_MIN (1e4*10)
-
-
-#define FILTER_PORT PORTD
-#define FILTER_DDR DDRD
-#define FILTER_CW 5
-#define FILTER_SSB 4
-
-volatile uint32_t f = 70000000;
-volatile uint32_t f_step = 1000;
-
-volatile struct _state {
-    uint8_t f_changed: 1;
-    uint8_t redraw: 1;
-    uint8_t cw_filter: 1;
-} state;
-
-void set_cw(void)
-{
-    FILTER_PORT |= _BV(FILTER_CW);
-    _delay_ms(30);
-    FILTER_PORT &= ~_BV(FILTER_CW);
-    state.cw_filter = 1;
-}
-
-void set_ssb(void)
-{
-    FILTER_PORT |= _BV(FILTER_SSB);
-    _delay_ms(30);
-    PORTD &= ~_BV(FILTER_SSB);
-    state.cw_filter = 0;
-}
-
-
-ISR(PCINT2_vect)
-{
-    f += ROTARY_DIR * direction(state.rotary_old, rotary_new) * f_step;
-
-    if ((f < F_MIN) || (f>(0xffffffff - F_MAX))) f = F_MIN;
-    else if (f>F_MAX) f = F_MAX;
-
-    state.f_changed = 1;
-    state.redraw = 1;
-}
-
+#include "state.h"
 
 int main(void)
 {
@@ -70,18 +24,14 @@ int main(void)
 
     cli();
 
-
-    FILTER_DDR |= _BV(FILTER_CW) | _BV(FILTER_SSB) | _BV(DDS_MOSI);
-    FILTER_PORT &= ~(_BV(FILTER_CW) | _BV(FILTER_SSB));
-
     /* disable ADC */
     ACSR |= _BV(ACD);
     ADCSRA &= ~_BV(ADEN);
 
-    set_cw();
     lcd_init();
     ir_init();
     interface_init();
+    radio_init();
     dds_init();
     
     sei();
@@ -91,21 +41,22 @@ int main(void)
     lcd_eep_write(s_author);
 
 
-    state.redraw = 1;
+    state |= LCD_REDRAW;
     _delay_ms(1000);
     lcd_clear();
 
     while(1) {
-        if(state.f_changed){
+        if(state & F_CHANGED){
             fl = bandplan(f / 1000, &extra);
-            state.f_changed = 0;
+            state &= ~F_CHANGED;
 
             // update DDS
             dds_f1(f);
         }
 
-        if(state.redraw) {
+        if(state & LCD_REDRAW) {
             state.redraw = 0;
+            state &= ~LCD_REDRAW;
             lcd_line(0);
             
             // print Mhz
@@ -147,14 +98,13 @@ int main(void)
             }
 
             lcd_line(1);
-            if(state.cw_filter) lcd_eep_write(s_cw);
+            if(state & ST_CW) lcd_eep_write(s_cw);
             else lcd_eep_write(s_ssb);
         }
 
         /* sleep the cpu to minimize RF noise */
         set_sleep_mode(SLEEP_MODE_PWR_DOWN);
         sleep_mode();
-        
     }
 
     return 0;

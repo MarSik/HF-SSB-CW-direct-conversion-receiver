@@ -5,6 +5,8 @@
 #include "interface.h"
 #include "dac.h"
 #include "leds.h"
+#include "state.h"
+#include "radio.h"
 
 static uint8_t rotary_old;
 
@@ -36,13 +38,13 @@ void interface_init(void)
 
 /* pin change int for key */
 ISR(PCINT2_vect){
-    if (!state.cw_filter && (BUTTON_PIN & _BV(BUTTON_1)) == 0) {
+    if (!(state & ST_CW) && (BUTTON_PIN & _BV(BUTTON_1)) == 0) {
         set_cw();
-        state.redraw = 1;
+        state |= LCD_REDRAW;
     }
-    if (state.cw_filter && (BUTTON_PIN & _BV(BUTTON_2)) == 0) {
+    if ((state & ST_CW) && (BUTTON_PIN & _BV(BUTTON_2)) == 0) {
         set_ssb();
-        state.redraw = 1;
+        state |= LCD_REDRAW;
     }
 
     /* get rotary vector[oldB oldA B A]*/
@@ -50,10 +52,12 @@ ISR(PCINT2_vect){
 
     if (ROTARY_LOOKUP_NEXT & _BV(r)) {
         // increase freq
+        freq_offset(F_DIR_UP);
     }
 
     else if (ROTARY_LOOKUP_PREV & _BV(r)) {
         // decrease freq
+        freq_offset(F_DIR_DOWN);
     }
 
     /* debounce
