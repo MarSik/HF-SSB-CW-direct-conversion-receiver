@@ -7,7 +7,13 @@
 #include "radio.h"
 
 static uint8_t rotary_old;
+volatile intf_mode_t interface_mode;
 
+/* lookup table in a form of bitarray (index is the number of the bit,
+   counted from 0 LSB)
+
+   inspired by rotary handling from EMRFD
+*/
 #define ROTARY_LOOKUP_PREV 0b0100000110000010
 #define ROTARY_LOOKUP_NEXT 0b0010100000010100
 
@@ -25,6 +31,10 @@ void interface_init(void)
     BUTTON_DDR &= ~(_BV(BUTTON_1) | _BV(BUTTON_2) | _BV(BUTTON_3) | _BV(BUTTON_4)); //inputs
     BUTTON_PORT |= _BV(BUTTON_1) | _BV(BUTTON_2) | _BV(BUTTON_3) | _BV(BUTTON_4); //pull ups
 
+    /* morse key interface */
+    KEY_DDR &= ~(_BV(KEY_A) | _BV(KEY_B));
+    KEY_PORT |= _BV(KEY_A) | _BV(KEY_B);
+
     // save inital rotary state
     rotary_old = ((ROTARY_PIN >> ROTARY_SHIFT) & 0b11) << 2;
 
@@ -32,9 +42,17 @@ void interface_init(void)
     /* button interrupt pins are 19, 20, 21, 22 */
     PCICR |= _BV(PCIE2);
     PCMSK2 |= _BV(PCINT16) | _BV(PCINT17) | _BV(PCINT18) | _BV(PCINT19) | _BV(PCINT20) | _BV(PCINT21) | _BV(PCINT22);
+
+    /* serial input 0 PCINT24, PCINT25, also used for morse key */
+    PCICR |= _BV(PCIE3);
+    PCMSK3 |= _BV(PCINT24) | _BV(PCINT25);
 }
 
-/* pin change int for key */
+/* pin change int for morse key */
+ISR(PCINT3_vect){
+}
+
+/* pin change int for keys */
 ISR(PCINT2_vect){
     if (!(state & ST_CW) && (BUTTON_PIN & _BV(BUTTON_1)) == 0) {
         set_cw();

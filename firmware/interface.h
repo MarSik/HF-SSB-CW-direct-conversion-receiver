@@ -20,6 +20,23 @@
 #define BUTTON_3 5
 #define BUTTON_4 6
 
+#define KEY_PORT PORTD
+#define KEY_PIN PIND
+#define KEY_DDR DDRD
+#define KEY_A 0 // RX
+#define KEY_B 1 // TX
+
 void interface_init(void);
+
+typedef enum {
+    INTF_FREQ = 0,
+    INTF_CW_SPEED,
+} intf_mode_t;
+
+extern volatile intf_mode_t interface_mode;
+
+void inline interface_mode_set(intf_mode_t m) {
+    interface_mode = m;
+}
 
 #endif
