@@ -6,7 +6,7 @@ HFUSE = 0xDA
 EFUSE = 0xFD
 
 # Application files and targets
-TARGET = dds
+TARGET = radio
 
 # Place -I options here
 CINCS = 
@@ -17,7 +17,7 @@ CEXTRA =
 CXXEXTRA = 
 
 # Source files for C compiler
-SRC = ir.c memory.c bandplan.c main.c lang.c lcd.c
+SRC = spi.c dds.c interface.c ir.c memory.c bandplan.c main.c lang.c lcd.c
 
 # Source files for C++ compiler
 CXXSRC = 

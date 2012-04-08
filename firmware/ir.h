@@ -5,9 +5,10 @@
 #define IRPORT PORTB
 #define IRPIN  PINB
 #define IRDDR  DDRB
-#define IR  3
+#define IR  2
 
 /* IR port Pin Change INT settings */
+/* TODO INT2 set to change mode */
 #define IRPCINTREG PCMSK
 #define IRPCINTFLAG PCINT3
 #define IRPCINTVECT PCINT0_vect
