@@ -59,18 +59,18 @@ void dds_f1(uint32_t f)
 {
     f = dds_convf(f);
 
-    dds_write(0x30, (dds >> 0) & 0xff);
-    dds_write(0x21, (dds >> 8) & 0xff);
-    dds_write(0x32, (dds >> 16) & 0xff);
-    dds_write(0x23, (dds >> 24) & 0xff);
+    dds_write(0x30, (f >> 0) & 0xff);
+    dds_write(0x21, (f >> 8) & 0xff);
+    dds_write(0x32, (f >> 16) & 0xff);
+    dds_write(0x23, (f >> 24) & 0xff);
 }
 
 void dds_f2(uint32_t f)
 {
     f = dds_convf(f);
 
-    dds_write(0x34, (dds >> 0) & 0xff);
-    dds_write(0x25, (dds >> 8) & 0xff);
-    dds_write(0x36, (dds >> 16) & 0xff);
-    dds_write(0x27, (dds >> 24) & 0xff);
+    dds_write(0x34, (f >> 0) & 0xff);
+    dds_write(0x25, (f >> 8) & 0xff);
+    dds_write(0x36, (f >> 16) & 0xff);
+    dds_write(0x27, (f >> 24) & 0xff);
 }

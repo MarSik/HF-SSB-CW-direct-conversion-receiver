@@ -14,6 +14,7 @@
 #include "spi.h"
 #include "dds.h"
 #include "state.h"
+#include "radio.h"
 
 int main(void)
 {
@@ -55,7 +56,6 @@ int main(void)
         }
 
         if(state & LCD_REDRAW) {
-            state.redraw = 0;
             state &= ~LCD_REDRAW;
             lcd_line(0);
             

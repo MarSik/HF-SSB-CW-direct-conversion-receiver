@@ -1,3 +1,6 @@
+#include <avr/io.h>
+#include <util/delay.h>
+
 #include "state.h"
 #include "radio.h"
 

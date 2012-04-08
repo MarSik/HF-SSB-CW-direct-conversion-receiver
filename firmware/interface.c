@@ -3,8 +3,6 @@
 #include <avr/io.h>
 #include <avr/sleep.h>
 #include "interface.h"
-#include "dac.h"
-#include "leds.h"
 #include "state.h"
 #include "radio.h"
 
