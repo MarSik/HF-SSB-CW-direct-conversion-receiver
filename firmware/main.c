@@ -47,15 +47,26 @@ int main(void)
     lcd_clear();
 
     while(1) {
-        if(state & F_CHANGED){
+        if (state & IR_DATA) {
+            uint8_t ird = ir_get();
+            if (ird == A_PWR) {
+                state |= LCD_REDRAW;
+                /* power button */
+            }
+            else if (ird == A_B1) {
+                /* button 1 */
+            }
+        }
+
+        if (state & F_CHANGED){
             fl = bandplan(f / 1000, &extra);
             state &= ~F_CHANGED;
 
-            // update DDS
+            // update DDS frequency
             dds_f1(f);
         }
 
-        if(state & LCD_REDRAW) {
+        if (state & LCD_REDRAW) {
             state &= ~LCD_REDRAW;
             lcd_line(0);
             
