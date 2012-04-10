@@ -24,28 +24,26 @@ void set_ssb(void)
 }
 
 
-void freq_step(char dir)
+void freq_step(signed char dir)
 {
     f += OFFSET_DIR * dir * f_step;
 
     if ((f < F_MIN) || (f>(0xffffffff - F_MAX))) f = F_MIN;
     else if (f>F_MAX) f = F_MAX;
 
-    state |= F_CHANGED | LCD_REDRAW;
+    state |= F_CHANGED;
 }
 
 void step_up()
 {
     f_step *= 10;
     if (f_step > STEP_MAX) f_step = STEP_MAX;
-    state |= LCD_REDRAW;
 }
 
 void step_down()
 {
     f_step /= 10;
     if (f_step < STEP_MIN) f_step = STEP_MIN;
-    state |= LCD_REDRAW;
 }
 
 

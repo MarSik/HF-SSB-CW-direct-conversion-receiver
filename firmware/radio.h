@@ -7,9 +7,10 @@
 #define F_MAX (15e6*10)
 #define F_MIN (1e4*10)
 
-#define F_DIR_UP 1
-#define F_DIR_DOWN -1
-#define OFFSET_DIR 1
+#define F_DIR_UP ((signed char)1)
+#define F_DIR_DOWN ((signed char)-1)
+
+#define OFFSET_DIR ((signed char)1)
 
 #define STEP_MAX 1e6
 #define STEP_MIN 10
@@ -28,7 +29,7 @@ void radio_init(void);
 
 void set_cw(void);
 void set_ssb(void);
-void freq_step(char dir);
+void freq_step(signed char dir);
 
 void step_up(void);
 void step_down(void);

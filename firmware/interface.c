@@ -25,7 +25,7 @@ void interface_init(void)
 {
     /* setup rotary button + A and B sensors */
     ROTARY_DDR &= ~(_BV(ROTARY_A) | _BV(ROTARY_B) | _BV(ROTARY_BUTTON));
-    PORTB |= _BV(ROTARY_A) | _BV(ROTARY_B) | _BV(ROTARY_BUTTON);
+    ROTARY_PORT |= _BV(ROTARY_A) | _BV(ROTARY_B) | _BV(ROTARY_BUTTON);
 
     /* setup buttons */
     BUTTON_DDR &= ~(_BV(BUTTON_1) | _BV(BUTTON_2) | _BV(BUTTON_3) | _BV(BUTTON_4)); //inputs
@@ -66,10 +66,12 @@ ISR(PCINT2_vect){
 
     if ((BUTTON_PIN & _BV(BUTTON_3)) == 0) {
         step_down();
+        state |= LCD_REDRAW;
     }
 
     if ((BUTTON_PIN & _BV(BUTTON_4)) == 0) {
         step_up();
+        state |= LCD_REDRAW;
     }
 
     if ((ROTARY_PIN & ROTARY_BUTTON) == 0) {
@@ -82,11 +84,13 @@ ISR(PCINT2_vect){
     if (ROTARY_LOOKUP_NEXT & _BV(r)) {
         // increase freq
         freq_step(F_DIR_UP);
+        state |= LCD_REDRAW;
     }
 
     else if (ROTARY_LOOKUP_PREV & _BV(r)) {
         // decrease freq
         freq_step(F_DIR_DOWN);
+        state |= LCD_REDRAW;
     }
 
     /* debounce
