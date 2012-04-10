@@ -2,10 +2,11 @@
 #define __DDS_dds_h__
 
 #include <stdint.h>
+#include "spi.h"
 
 #define DDS_PORT PORTB
 #define DDS_DDR DDRB
-#define DDS_CS 4
+#define DDS_CS SPI_SS
 
 extern const uint32_t dds_f;
 

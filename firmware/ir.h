@@ -32,7 +32,7 @@ void inline ir_pcint_setup(void)
 
 /* INT bit to set when IR received valid data */
 #define IRDONEINTREG state
-#define IRDONEINTMASK IR_DATA
+#define IRDONEINTMASK IR_DATA_READY
 
 /* INT bit to clear when PCINT routine is called */
 #define IROVFREG TIFR0

@@ -38,12 +38,14 @@ void step_up()
 {
     f_step *= 10;
     if (f_step > STEP_MAX) f_step = STEP_MAX;
+    state |= LCD_REDRAW;
 }
 
 void step_down()
 {
     f_step /= 10;
     if (f_step < STEP_MIN) f_step = STEP_MIN;
+    state |= LCD_REDRAW;
 }
 
 

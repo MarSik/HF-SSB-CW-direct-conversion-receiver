@@ -33,24 +33,23 @@ int main(void)
     ir_init();
     interface_init();
     radio_init();
+    spi_init();
     dds_init();
-    
     sei();
 
     lcd_eep_write(s_title);
     lcd_line(1);
     lcd_eep_write(s_author);
-
+    _delay_ms(1000);
 
     state |= LCD_REDRAW;
-    _delay_ms(1000);
     lcd_clear();
 
     while(1) {
-        if (state & IR_DATA) {
+        if (state & IR_DATA_READY) {
             uint8_t ird = ir_get();
             if (ird == A_PWR) {
-                state |= LCD_REDRAW;
+                lcd_clear();
                 /* power button */
             }
             else if (ird == A_B1) {
@@ -59,7 +58,7 @@ int main(void)
         }
 
         if (state & F_CHANGED){
-            fl = bandplan(f / 1000, &extra);
+            //fl = bandplan(f / 1000, &extra);
             state &= ~F_CHANGED;
 
             // update DDS frequency
@@ -69,6 +68,7 @@ int main(void)
         if (state & LCD_REDRAW) {
             state &= ~LCD_REDRAW;
             lcd_line(0);
+            lcd_mode(LCD_DATA);
             
             // print Mhz
             ultoa((f/10000000), buffer, 10);
@@ -114,8 +114,8 @@ int main(void)
         }
 
         /* sleep the cpu to minimize RF noise */
-        set_sleep_mode(SLEEP_MODE_PWR_DOWN);
-        sleep_mode();
+        //set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+        //sleep_mode();
     }
 
     return 0;

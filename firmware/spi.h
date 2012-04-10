@@ -8,6 +8,8 @@
 #define SPI_MISO 6
 #define SPI_MOSI 5
 #define SPI_SCK 7
+#define SPI_SS 4
+#define SPI_SS2 3
 
 uint8_t spi_transfer(uint8_t data);
 void spi_init(void);

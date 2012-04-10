@@ -6,7 +6,7 @@
 #include "state.h"
 #include "radio.h"
 
-static uint8_t rotary_old;
+static volatile uint8_t rotary_old;
 volatile intf_mode_t interface_mode;
 
 /* lookup table in a form of bitarray (index is the number of the bit,
@@ -94,6 +94,6 @@ ISR(PCINT2_vect){
     */
 
     /* save old rotary */
-    rotary_old = ((ROTARY_PIN >> ROTARY_SHIFT) & 0b11) << 2;
+    rotary_old = (r & 0b11) << 2;
 }
 
