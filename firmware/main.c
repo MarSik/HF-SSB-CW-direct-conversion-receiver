@@ -60,7 +60,7 @@ int main(void)
         }
 
         if (state & F_CHANGED){
-            //fl = bandplan(f / 1000, &extra);
+            fl = bandplan(f / 1000, &extra);
             state &= ~F_CHANGED;
 
             // update DDS frequency

@@ -3,7 +3,7 @@
 #include "bandplan.h"
 #include "lang.h"
 
-#define BANDPLAN_LEN 9
+#define BANDPLAN_LEN 42
 #define BANDPLAN_ENTRY_LEN 3
 #define BAND(from, to, flags, extra) (from), (to), ((flags) << 8) + (extra)
 
@@ -15,15 +15,52 @@
 */
 
 uint16_t bandplan_table[BANDPLAN_LEN * BANDPLAN_ENTRY_LEN] EEMEM = {
-    BAND(3500, 3509, TX | CW | DX, 0),
-    BAND(3510, 3539, TX | CW, 0),
-    BAND(3540, 3559, TX | CW | DIGI, 0),
-    BAND(3560, 3580, TX | DIGI, 0),
-    BAND(3600, 3800, TX | SSB, 0),
-    BAND(7000, 7350, TX, 0),
-    BAND(10000, 10140, TX | CW, 0),
-    BAND(10140, 10150, TX | DIGI, 0),
-    BAND(14000, 14999, TX, 0)
+    BAND(1810, 1837, CW, 0),
+    BAND(1838, 1839, CW | DIGI | NARROW, 0),
+    BAND(1840, 1842, DIGI, 0),
+    BAND(1843, 1999, ALLM, 0),
+    
+    BAND(3500, 3509, CW | DX, 0),
+    BAND(3510, 3559, CW, 0),
+    BAND(3560, 3560, CW | QRP, 0),
+    BAND(3561, 3579, CW, 0),
+    BAND(3580, 3589, DIGI | NARROW, 0),
+    BAND(3590, 3599, DIGI | NARROW | UNATTENDED, 0),
+    BAND(3600, 3619, DIGI, 0),
+    BAND(3620, 3689, ALLM, 0),
+    BAND(3690, 3690, SSB | QRP, 0),
+    BAND(3691, 3774, ALLM, 0),
+    BAND(3775, 3800, ALLM | DX, 0),
+
+    BAND(7000, 7029, CW, 0),
+    BAND(7030, 7030, CW | QRP, 0),
+    BAND(7031, 7039, CW, 0),
+    BAND(7040, 7046, NARROW | DIGI, 0),
+    BAND(7047, 7049, NARROW | DIGI | UNATTENDED, 0),
+    BAND(7050, 7052, ALLM | UNATTENDED, 0),
+    BAND(7053, 7059, DIGI, 0),
+    BAND(7060, 7089, ALLM, 0),
+    BAND(7090, 7090, SSB | QRP, 0),
+    BAND(7091, 7174, ALLM, 0),
+    BAND(7175, 7200, ALLM | DX, 0),
+
+    BAND(10100, 10115, CW, 0),
+    BAND(10116, 10116, CW | QRP, 0),
+    BAND(10117, 10139, CW, 0),
+    BAND(10140, 10149, DIGI | NARROW, 0),
+    
+    BAND(14000, 14059, CW, 0),
+    BAND(14060, 14060, CW | QRP, 0),
+    BAND(14061, 14069, CW, 0),
+    BAND(14070, 14088, NARROW | DIGI, 0),
+    BAND(14089, 14098, NARROW | DIGI | UNATTENDED, 0),
+    BAND(14099, 14100, UNATTENDED, 0),
+    BAND(14101, 14111, DIGI | UNATTENDED, 0),
+    BAND(14112, 14189, ALLM, 0),
+    BAND(14190, 14199, ALLM | DX, 0),
+    BAND(14200, 14284, ALLM, 0),
+    BAND(14285, 14285, SSB | QRP, 0),
+    BAND(14286, 14349, ALLM, 0)
 };
 
 const uint8_t* bandplan_extra[] EEMEM = {
