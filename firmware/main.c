@@ -47,6 +47,8 @@ int main(void)
 
     while(1) {
         if (state & IR_DATA_READY) {
+            state &= ~IR_DATA_READY;
+
             uint8_t ird = ir_get();
             if (ird == A_PWR) {
                 lcd_clear();
