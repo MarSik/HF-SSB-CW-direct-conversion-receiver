@@ -13,5 +13,7 @@ const uint8_t s_ssb[] EEMEM = "SSB";
 /*
  * Band extra strings
  */
-const uint8_t s_sat_dl[] EEMEM = "SATDL";
-const uint8_t s_sat_ul[] EEMEM = "SATUL";  
+const uint8_t s_saq[] EEMEM = "SAQ";
+const uint8_t s_dcf77[] EEMEM = "DCF77";
+const uint8_t s_emergency[] EEMEM = "SOS";
+const uint8_t s_image[] EEMEM = "IMAGE";

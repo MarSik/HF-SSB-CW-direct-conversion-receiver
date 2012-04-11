@@ -20,8 +20,8 @@ int main(void)
 {
     char buffer[9];
     uint8_t i;
-    uint8_t fl;
-    const uint8_t *extra;
+    uint8_t fl = 0;
+    const uint8_t *extra = NULL;
 
     cli();
 
@@ -60,7 +60,7 @@ int main(void)
         }
 
         if (state & F_CHANGED){
-            fl = bandplan(f / 1000, &extra);
+            fl = bandplan(f / 10000, &extra);
             state &= ~F_CHANGED;
 
             // update DDS frequency
@@ -111,8 +111,26 @@ int main(void)
             }
 
             lcd_line(1);
-            if(state & ST_CW) lcd_eep_write(s_cw);
+            if (state & ST_CW) lcd_eep_write(s_cw);
             else lcd_eep_write(s_ssb);
+
+            lcd_put(' ');
+            if (fl & CW) lcd_put('c');
+            else lcd_put(' ');
+
+            if (fl & SSB) lcd_put('s');
+            else lcd_put(' ');
+
+            if (fl & DIGI) lcd_put('d');
+            else lcd_put(' ');
+
+            if (TXOK(fl)) lcd_put('+');
+            else lcd_put('-');
+
+            lcd_put(' ');
+
+            if (extra) lcd_eep_write(extra);
+            else lcd_write("        ");
         }
 
         /* sleep the cpu to minimize RF noise */

@@ -13,7 +13,14 @@
 #define QRP _BV(6) /* QRP activity */
 #define DX _BV(7) /* DX activity */
 
+/* helper macro to define all modes as allowed */
 #define ALLM (CW | SSB | DIGI | OTHER)
+
+#define BANDTX (CW) /* what flags have to be present for TX to be allowed */
+#define BANDRX (UNATTENDED) /* what flags signalize RX mode only */
+
+/* macro to implement "TX allowed" logic */
+#define TXOK(flags) ((BANDTX & (flags)) && !(BANDRX & (flags)))
 
 uint8_t bandplan(uint16_t kHz, const uint8_t **desc);
 

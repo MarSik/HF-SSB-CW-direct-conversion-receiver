@@ -17,7 +17,9 @@ extern const uint8_t s_ssb[] EEMEM;
 /*
  * Band extra strings
  */
-extern const uint8_t s_sat_dl[] EEMEM;
-extern const uint8_t s_sat_ul[] EEMEM;
+extern const uint8_t s_saq[]  EEMEM;
+extern const uint8_t s_dcf77[]  EEMEM;
+extern const uint8_t s_emergency[]  EEMEM;
+extern const uint8_t s_image[]  EEMEM;
 
 #endif /* LANG_DDS_02012012_MarSik */
