@@ -14,6 +14,8 @@ extern const uint8_t s_hex_prefix[] EEMEM;
 extern const uint8_t s_cw[] EEMEM;
 extern const uint8_t s_ssb[] EEMEM;
 
+extern const uint8_t s_ircode[] EEMEM;
+
 /*
  * Band extra strings
  */

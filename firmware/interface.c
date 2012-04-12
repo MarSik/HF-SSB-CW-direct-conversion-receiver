@@ -65,12 +65,10 @@ ISR(PCINT2_vect){
     }
 
     if ((BUTTON_PIN & _BV(BUTTON_3)) == 0) {
-        step_down();
         state |= LCD_REDRAW;
     }
 
     if ((BUTTON_PIN & _BV(BUTTON_4)) == 0) {
-        step_up();
         state |= LCD_REDRAW;
     }
 
@@ -82,14 +80,14 @@ ISR(PCINT2_vect){
     uint8_t r = ((ROTARY_PIN >> ROTARY_SHIFT) & 0b11) | rotary_old;
 
     if (ROTARY_LOOKUP_NEXT & _BV(r)) {
-        // increase freq
-        freq_step(F_DIR_UP);
+        if ((BUTTON_PIN & _BV(BUTTON_4)) == 0) step_up();
+        else freq_step(F_DIR_UP); // increase freq
         state |= LCD_REDRAW;
     }
 
     else if (ROTARY_LOOKUP_PREV & _BV(r)) {
-        // decrease freq
-        freq_step(F_DIR_DOWN);
+        if ((BUTTON_PIN & _BV(BUTTON_4)) == 0) step_down();
+        else freq_step(F_DIR_DOWN); // decrease freq
         state |= LCD_REDRAW;
     }
 

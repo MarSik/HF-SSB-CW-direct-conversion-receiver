@@ -57,6 +57,13 @@ int main(void)
             else if (ird == A_B1) {
                 /* button 1 */
             }
+            else {
+                lcd_clear();
+                lcd_line(0);
+                utoa(ird, buffer, 16);
+                lcd_eep_write(s_ircode);
+                lcd_write((unsigned char*)buffer);
+            }
         }
 
         if (state & F_CHANGED){
