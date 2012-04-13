@@ -31,8 +31,9 @@
 #define ONE_BIT_L 8 //1.024ms
 #define PREAMBLE_L 47 //6.016ms
 
-volatile uint8_t bit_c = 0; // bit no. we are about to receive (255 denotes repeated command, 254 not ready state)
-volatile uint8_t data[4];
+volatile static uint8_t bit_c = 0; // bit no. we are about to receive (255 denotes repeated command, 254 not ready state)
+volatile static uint8_t data[4];
+volatile uint8_t ir_received;
 
 static volatile enum{ D_NOTHING = 0,
                       D_PREAMBLE,
@@ -61,7 +62,7 @@ static action_t inline processIR(volatile uint8_t msg[4])
 
 action_t ir_get(void)
 {
-    return processIR(data);
+    return ir_received;
 }
 
 void ir_init(void)
@@ -125,7 +126,8 @@ ISR(IRTIMEROVFINT) {
         if(bit_c == 255) ir_state = D_REPEAT; // special flag set, this requests repetition of previous command
         else ir_state = D_DATA; // data received
 
-        // set int flag
+        // set int flag and buffer the data
+        ir_received = processIR(data);
         IRDONEINTREG |= IRDONEINTMASK;
     }
     else ir_state = D_NOTHING; // timeout, reset the state
