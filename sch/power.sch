@@ -1,11 +1,11 @@
-v 20100214 2
+v 20110115 2
 C 40000 40000 0 0 0 title-B.sym
 C 42900 43900 1 0 0 lm7805-1.sym
 {
 T 44500 45200 5 10 0 0 0 0 1
 device=7805
 T 44300 44900 5 10 1 1 0 6 1
-refdes=U?
+refdes=U4
 }
 C 42100 48800 1 0 0 12V-plus-1.sym
 C 44800 44500 1 0 0 5V-plus-1.sym
@@ -15,7 +15,7 @@ C 42100 48800 1 270 0 capacitor-2.sym
 T 42800 48600 5 10 0 0 270 0 1
 device=POLARIZED_CAPACITOR
 T 42600 48600 5 10 1 1 270 0 1
-refdes=C?
+refdes=C15
 T 43000 48600 5 10 0 0 270 0 1
 symversion=0.1
 }
@@ -24,7 +24,7 @@ C 44600 48600 1 0 0 battery-1.sym
 T 44900 49500 5 10 0 0 0 0 1
 device=BATTERY
 T 44900 49100 5 10 1 1 0 0 1
-refdes=B?
+refdes=B1
 T 44900 49900 5 10 0 0 0 0 1
 symversion=0.1
 }
@@ -33,14 +33,14 @@ C 42900 48800 1 0 0 switch-spst-1.sym
 T 43300 49500 5 10 0 0 0 0 1
 device=SPST
 T 43200 49100 5 10 1 1 0 0 1
-refdes=S?
+refdes=S5
 }
 C 43700 48700 1 0 0 fuse-2.sym
 {
 T 43900 49250 5 10 0 0 0 0 1
 device=FUSE
 T 43900 49000 5 10 1 1 0 0 1
-refdes=F?
+refdes=F1
 T 43900 49450 5 10 0 0 0 0 1
 symversion=0.1
 }
@@ -53,8 +53,8 @@ C 44800 44500 1 270 0 capacitor-2.sym
 {
 T 45500 44300 5 10 0 0 270 0 1
 device=POLARIZED_CAPACITOR
-T 45300 44300 5 10 1 1 270 0 1
-refdes=C?
+T 45300 44100 5 10 1 1 0 0 1
+refdes=C16
 T 45700 44300 5 10 0 0 270 0 1
 symversion=0.1
 }
@@ -83,43 +83,43 @@ C 49600 47600 1 270 1 mosfet-with-diode-1.sym
 {
 T 50100 48500 5 10 0 0 90 2 1
 device=NPN_TRANSISTOR
-T 50100 48500 5 10 1 1 90 2 1
-refdes=Q?
+T 50400 48500 5 10 1 1 180 2 1
+refdes=Q1
 }
 C 48900 46000 1 270 1 mosfet-with-diode-1.sym
 {
 T 49400 46900 5 10 0 0 90 2 1
 device=NPN_TRANSISTOR
-T 49400 46900 5 10 1 1 90 2 1
-refdes=Q?
+T 49600 46900 5 10 1 1 180 2 1
+refdes=Q2
 }
 C 51800 48000 1 0 0 diode-1.sym
 {
 T 52200 48600 5 10 0 0 0 0 1
 device=DIODE
-T 52100 48500 5 10 1 1 0 0 1
-refdes=D?
+T 52400 48500 5 10 1 1 0 0 1
+refdes=D1
 }
 C 51800 46400 1 0 0 diode-1.sym
 {
 T 52200 47000 5 10 0 0 0 0 1
 device=DIODE
-T 52100 46900 5 10 1 1 0 0 1
-refdes=D?
+T 52300 46900 5 10 1 1 0 0 1
+refdes=D2
 }
 C 51800 47500 1 0 0 resistor-2.sym
 {
 T 52200 47850 5 10 0 0 0 0 1
 device=RESISTOR
-T 52000 47800 5 10 1 1 0 0 1
-refdes=R?
+T 51800 47200 5 10 1 1 0 0 1
+refdes=R5
 }
 C 51800 45800 1 0 0 resistor-2.sym
 {
 T 52200 46150 5 10 0 0 0 0 1
 device=RESISTOR
-T 52000 46100 5 10 1 1 0 0 1
-refdes=R?
+T 51800 45500 5 10 1 1 0 0 1
+refdes=R6
 }
 C 48000 45500 1 0 0 gnd-1.sym
 C 52500 48800 1 0 0 5V-plus-1.sym
@@ -142,36 +142,36 @@ C 50700 45300 1 0 1 in-1.sym
 {
 T 50700 45600 5 10 0 0 0 6 1
 device=INPUT
-T 50800 45400 5 10 1 1 0 0 1
-refdes=F_CW
-T 50700 45300 5 10 0 0 0 0 1
+T 50800 45400 5 10 0 1 0 0 1
+refdes=F_CW2
+T 50800 45300 5 10 1 1 0 0 1
 net=F_CW:1
 }
 C 50700 45000 1 0 1 in-1.sym
 {
 T 50700 45300 5 10 0 0 0 6 1
 device=INPUT
-T 50800 45100 5 10 1 1 0 0 1
-refdes=F_SSB
-T 50700 45000 5 10 0 0 0 0 1
+T 50800 45100 5 10 0 1 0 0 1
+refdes=F_SSB2
+T 50800 45000 5 10 1 1 0 0 1
 net=F_SSB:1
 }
 C 50000 49700 1 0 1 out-1.sym
 {
 T 50000 50000 5 10 0 0 0 6 1
 device=OUTPUT
-T 49300 49800 5 10 1 1 0 6 1
-refdes=relayB
-T 50000 49700 5 10 0 0 0 0 1
+T 49300 49800 5 10 0 1 0 6 1
+refdes=relayB1
+T 48600 49800 5 10 1 1 0 0 1
 net=relayB:1
 }
 C 50000 50000 1 0 1 out-1.sym
 {
 T 50000 50300 5 10 0 0 0 6 1
 device=OUTPUT
-T 49300 50100 5 10 1 1 0 6 1
-refdes=relayA
-T 50000 50000 5 10 0 0 0 0 1
+T 49300 50100 5 10 0 1 0 6 1
+refdes=relayA1
+T 48600 50100 5 10 1 1 0 0 1
 net=relayA:1
 }
 T 47600 50500 9 10 1 0 0 0 1
