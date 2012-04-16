@@ -13,6 +13,7 @@ extern const uint8_t s_author[] EEMEM;
 extern const uint8_t s_hex_prefix[] EEMEM;
 extern const uint8_t s_cw[] EEMEM;
 extern const uint8_t s_ssb[] EEMEM;
+extern const uint8_t s_digi[] EEMEM;
 
 extern const uint8_t s_ircode[] EEMEM;
 

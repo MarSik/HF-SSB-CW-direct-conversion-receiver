@@ -4,6 +4,10 @@
 #include <avr/eeprom.h>
 #include "lcd.h"
 
+static const uint8_t lcd_c_cw[] EEMEM = {0x1f, 0x1f, 0xe, 0x6, 0xa, 0xc, 0xe, 0x1f, 0};
+static const uint8_t lcd_c_ssb[] EEMEM = {0x1f, 0x1f, 0xe, 0xa, 0xa, 0xa, 0x15, 0x1f, 0};
+static const uint8_t lcd_c_tx[] EEMEM = {0x1f, 0x15, 0x1b, 0x15, 0x1b, 0x1b, 0x11, 0x1f, 0};
+
 void lcd_put(uint8_t data)
 {
     LCD |= _BV(EN); // set EN high
@@ -79,6 +83,25 @@ void lcd_init(void)
 
     lcd_put(0x06); //write mode (shift cursor and keep display)
     _delay_us(39);
+
+    /* load new characters */
+    /*
+    static const uint8_t l_cw[] EEMEM = {0x1f, 0x1f, 0xe, 0x6, 0xa, 0xc, 0xe, 0x1f};
+    static const uint8_t l_ssb[] EEMEM = {0x1f, 0x1f, 0xe, 0xa, 0xa, 0xa, 0x15, 0x1f};
+    static const uint8_t l_tx[] EEMEM = {0x1b, 0xa, 0x15, 0x1f, 0x1b, 0x1b, 0x1b, 0x11};
+    */
+
+    lcd_newchar(0);
+    lcd_eep_write(lcd_c_cw);
+
+    lcd_newchar(1);
+    lcd_eep_write(lcd_c_ssb);
+
+    lcd_newchar(2);
+    lcd_eep_write(lcd_c_tx);
+
+    lcd_line(0);
+    lcd_mode(LCD_DATA);
 }
 
 void lcd_clear(void)
@@ -95,7 +118,7 @@ void lcd_line(uint8_t line)
     _delay_us(45);
 }
 
-void lcd_write(const unsigned char* str)
+void lcd_write(const uint8_t* str)
 {
     lcd_mode(LCD_DATA);
 
@@ -106,7 +129,7 @@ void lcd_write(const unsigned char* str)
     }
 }
 
-void lcd_eep_write(const unsigned char* str)
+void lcd_eep_write(const uint8_t* str)
 {
     uint8_t c;
     
@@ -119,4 +142,11 @@ void lcd_eep_write(const unsigned char* str)
         _delay_us(50);
         str++;
     }
+}
+
+void lcd_newchar(uint8_t idx)
+{
+    lcd_mode(LCD_COMMAND);
+    lcd_put(0x40 + (idx * 8));
+    _delay_us(45);
 }

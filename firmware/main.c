@@ -97,7 +97,9 @@ int main(void)
             lcd_write((unsigned char*)buffer);
 
             // print step size
-            lcd_put(' ');
+            if (state & ST_CW) lcd_put(0x00);
+            else lcd_put(0x01);
+
             lcd_put(' ');
             if (f_step<1000) {
                 utoa(f_step, buffer, 10);
@@ -118,23 +120,24 @@ int main(void)
             }
 
             lcd_line(1);
-            if (state & ST_CW) lcd_eep_write(s_cw);
-            else lcd_eep_write(s_ssb);
+            lcd_mode(LCD_DATA);
 
-            lcd_put(' ');
-            if (fl & CW) lcd_put('c');
-            else lcd_put(' ');
+            if (fl & CW) {
+                lcd_eep_write(s_cw);
+                lcd_put(' ');
+            }
 
-            if (fl & SSB) lcd_put('s');
-            else lcd_put(' ');
+            if (fl & SSB) {
+                lcd_eep_write(s_ssb);
+                lcd_put(' ');
+            }
 
-            if (fl & DIGI) lcd_put('d');
-            else lcd_put(' ');
+            if (fl & DIGI) {
+                lcd_eep_write(s_digi);
+                lcd_put(' ');
+            }
 
-            if (TXOK(fl)) lcd_put('+');
-            else lcd_put('-');
-
-            lcd_put(' ');
+            if (TXOK(fl)) lcd_put(0x2);
 
             if (extra) lcd_eep_write(extra);
             else lcd_write("        ");

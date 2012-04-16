@@ -47,9 +47,15 @@ void lcd_clear(void);
 void lcd_line(uint8_t line);
 
 /* send DATA string from RAM to LCD */
-void lcd_write(const unsigned char* str);
+void lcd_write(const uint8_t* str);
 
 /* send DATA string from EEPROM to LCD */
-void lcd_eep_write(const unsigned char* str);
+void lcd_eep_write(const uint8_t* str);
+
+/* prepare lcd for receiving a new character
+   id must be 0 to 7
+   and this call must be followed by 8 bytes with bitmask
+*/
+void lcd_newchar(uint8_t idx);
 
 #endif /* LCD_H_2012_0203_1436_MarSik_ASDFKJAS */
