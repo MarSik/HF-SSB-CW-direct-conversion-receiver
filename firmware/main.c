@@ -54,6 +54,22 @@ int main(void)
                 lcd_clear();
                 /* power button */
             }
+            else if (ird == A_CHUP) {
+                freq_step(F_DIR_UP);
+                state |= LCD_REDRAW;
+            }
+            else if (ird == A_CHDOWN) {
+                freq_step(F_DIR_DOWN);
+                state |= LCD_REDRAW;
+            }
+            else if (ird == A_VUP) {
+                step_up();
+                state |= LCD_REDRAW;
+            }
+            else if (ird == A_VDOWN) {
+                step_down();
+                state |= LCD_REDRAW;
+            }
             else if (ird == A_B1) {
                 /* button 1 */
             }
@@ -144,8 +160,8 @@ int main(void)
         }
 
         /* sleep the cpu to minimize RF noise */
-        //set_sleep_mode(SLEEP_MODE_PWR_DOWN);
-        //sleep_mode();
+        set_sleep_mode(SLEEP_MODE_IDLE);
+        sleep_mode();
     }
 
     return 0;
