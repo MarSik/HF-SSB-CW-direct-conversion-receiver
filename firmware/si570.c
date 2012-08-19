@@ -54,7 +54,9 @@ uint8_t si570_set_f(uint32_t f)
     // compute fractional part of RFREQ
     RFREQ_frac = 0;
     int i;
-    for(i=0; (rem > 0) && (i < 28); i++) {
+
+    // compute 28 bits, but break if the remainder is 0
+    for(i = 28; (rem > 0) && (i > 0); --i) {
         rem <<= 1; //shift
         RFREQ_frac <<= 1;
         if (rem > XTAL) {
@@ -62,6 +64,9 @@ uint8_t si570_set_f(uint32_t f)
             rem -= XTAL;
         }
     }
+
+    // fix the shift if we exited the loop early
+    RFREQ_frac <<= i;
 
     return 0;
 }
