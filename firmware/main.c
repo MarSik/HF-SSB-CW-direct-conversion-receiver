@@ -82,8 +82,13 @@ int main(void)
             }
         }
 
+        if (state & F_SMALL_CHANGE){
+            state &= ~F_SMALL_CHANGE;
+            state |= F_CHANGED;
+        }
+
         if (state & F_CHANGED){
-            fl = bandplan(f / 10000, &extra);
+            fl = bandplan(f_sf(f), &extra);
             state &= ~F_CHANGED;
 
             // update DDS frequency
@@ -94,19 +99,19 @@ int main(void)
             state &= ~LCD_REDRAW;
             lcd_line(0);
             lcd_mode(LCD_DATA);
-            
+
             // print Mhz
             ultoa((f/10000000), buffer, 10);
             for(i=2; i>strlen(buffer); i--) lcd_put(' ');
             lcd_write((unsigned char*)buffer);
             lcd_put('.');
-            
+
             // print kHz
             ultoa((f % 10000000) / (10000), buffer, 10);
             for(i=3; i>strlen(buffer); i--) lcd_put('0');
             lcd_write((unsigned char*)buffer);
             lcd_put('.');
-            
+
             // print Hz
             ultoa((f % 10000) / 10, buffer, 10);
             for(i=3; i>strlen(buffer); i--) lcd_put('0');

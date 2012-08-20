@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include "freq.h"
 #include "i2c.h"
 #include "si570.h"
 
@@ -11,22 +12,26 @@
  * All four following frequency vars have to have the real value divided by 4
  * to fit into the datatype and to play nicely with the QSD/QSE Johnson counters
  */
-uint32_t XTAL = SI570_XTAL / 4; //oscillator's XTAL frequency in Mhz / 4 (11bit.21bit)
-uint32_t Fdco; //PLL frequency in Mhz (11bit.21bit)
-uint32_t Fout; //real frequency in Mhz (11bit.21bit)
+freq_t XTAL = SI570_XTAL / 4; //oscillator's XTAL frequency in Mhz / 4 (11bit.21bit)
+freq_t Fdco; //PLL frequency in Mhz (11bit.21bit)
+freq_t Fout; //real frequency in Mhz (11bit.21bit)
 
 /*
  * Dividers for Si570 setup
  */
 uint8_t N1; //1 and all even numbers up to 128
 uint8_t HSDIV; //11,9,7,6,5,4
-uint16_t RFREQ_full; //10bit
-uint32_t RFREQ_frac; //28bit
+
+typedef uint16_t rfreq_t;
+typedef uint32_t rfreq_f_t;
+
+rfreq_t RFREQ_full; //10bit
+rfreq_f_t RFREQ_frac; //28bit
 
 /*
  * Recompute all dividers and RFREQ
  */
-uint8_t si570_set_f(uint32_t f)
+uint8_t si570_set_f(freq_t f)
 {
     int i;
     uint16_t dividers = Fdco_min / f;
@@ -130,8 +135,8 @@ void si570_load(void)
 
     HSDIV = 4 + (data[0] >> 5);
     N1 = 1 + ((data[0] & 0x1F) << 2) + (data[1] >> 6);
-    RFREQ_full = ((data[1] & 0x3F) * 16) + (data[2] >> 4);
-    RFREQ_frac = ((data[2] & 0xF) << 24) + (data[3] << 16) + (data[4] << 8) + data[5];
+    RFREQ_full = ((rfreq_t)(data[1] & 0x3F) * 16) + (data[2] >> 4);
+    RFREQ_frac = ((rfreq_f_t)(data[2] & 0xF) << 24) + ((rfreq_f_t)data[3] << 16) + ((rfreq_f_t)data[4] << 8) + data[5];
 }
 
 /*

@@ -17,7 +17,7 @@ CEXTRA =
 CXXEXTRA =
 
 # Source files for C compiler
-SRC = radio.c i2c.c spi.c dds.c si570.c interface.c ir.c memory.c bandplan.c main.c lang.c lcd.c
+SRC = freq.c radio.c i2c.c spi.c dds.c si570.c interface.c ir.c memory.c bandplan.c main.c lang.c lcd.c
 
 # Source files for C++ compiler
 CXXSRC =

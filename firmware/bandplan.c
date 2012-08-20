@@ -2,10 +2,11 @@
 #include <avr/eeprom.h>
 #include "bandplan.h"
 #include "lang.h"
+#include "freq.h"
 
 #define BANDPLAN_LEN 44
 #define BANDPLAN_ENTRY_LEN 3
-#define BAND(from, to, flags, extra) (from), (to), ((flags) << 8) + (extra)
+#define BAND(from, to, flags, extra) KHZ_sf(from), KHZ_sf(to), ((flags) << 8) + (extra)
 
 enum {
     EX_NOTHING = 0,
@@ -39,7 +40,7 @@ uint16_t bandplan_table[BANDPLAN_LEN * BANDPLAN_ENTRY_LEN] EEMEM = {
     BAND(1838, 1839, CW | DIGI | NARROW, 0),
     BAND(1840, 1842, DIGI, 0),
     BAND(1843, 1999, ALLM, 0),
-    
+
     BAND(3500, 3509, CW | DX, 0),
     BAND(3510, 3559, CW, 0),
     BAND(3560, 3560, CW | QRP, 0),
@@ -68,7 +69,7 @@ uint16_t bandplan_table[BANDPLAN_LEN * BANDPLAN_ENTRY_LEN] EEMEM = {
     BAND(10116, 10116, CW | QRP, 0),
     BAND(10117, 10139, CW, 0),
     BAND(10140, 10149, DIGI | NARROW, 0),
-    
+
     BAND(14000, 14059, CW, 0),
     BAND(14060, 14060, CW | QRP, 0),
     BAND(14061, 14069, CW, 0),
@@ -85,7 +86,7 @@ uint16_t bandplan_table[BANDPLAN_LEN * BANDPLAN_ENTRY_LEN] EEMEM = {
 
 
 /* search for band in sorted array bandplan_table */
-uint8_t bandplan(uint16_t kHz, const uint8_t** desc)
+uint8_t bandplan(sfreq_t f, const uint8_t** desc)
 {
     uint8_t idxa = 0;
     uint8_t idxb = BANDPLAN_LEN - 1;
@@ -96,7 +97,7 @@ uint8_t bandplan(uint16_t kHz, const uint8_t** desc)
         uint16_t to = eeprom_read_word(bandplan_table + BANDPLAN_ENTRY_LEN * idx + 1);
 
         /* we found the band! */
-        if (fr <= kHz && to >= kHz) {
+        if (fr <= f && to >= f) {
             uint16_t ex = eeprom_read_word(bandplan_table + BANDPLAN_ENTRY_LEN * idx + 2);
             uint8_t f = ex >> 8;
 
@@ -108,7 +109,7 @@ uint8_t bandplan(uint16_t kHz, const uint8_t** desc)
         }
 
         /* we are looking too high */
-        else if (fr > kHz) {
+        else if (fr > f) {
             // we are reached the lower end of the table and found nothing
             if (idx == 0) {
                 *desc = NULL;
@@ -119,9 +120,9 @@ uint8_t bandplan(uint16_t kHz, const uint8_t** desc)
         }
 
         /* we are looking too low */
-        else if (to < kHz) {
+        else if (to < f) {
             idxa = idx + 1;
-    
+
             // we are reached the upper side of the table and found nothing
             if (idx == BANDPLAN_LEN) {
                 *desc = NULL;

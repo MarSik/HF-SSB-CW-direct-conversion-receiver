@@ -4,9 +4,10 @@
 #include <stdlib.h>
 #include "spi.h"
 #include "dds.h"
+#include "freq.h"
 
-/* base frequency multiplied by 10 */
-const uint32_t dds_f = 50e6 * 10;
+/* base frequency */
+const freq_t dds_f = MHZ_f(50);
 
 static void dds_begin(void)
 {
@@ -57,12 +58,12 @@ void dds_init(void)
    eg.
    7Mhz is 7 000 000 0
 */
-static uint32_t dds_convf(uint32_t f)
+static uint32_t dds_convf(freq_t f)
 {
     return round(0xffffffff*(double)f/dds_f);
 }
 
-void dds_f1(uint32_t f)
+void dds_f1(freq_t f)
 {
     f = dds_convf(f);
 
@@ -72,7 +73,7 @@ void dds_f1(uint32_t f)
     dds_write(0x23, (f >> 24) & 0xff);
 }
 
-void dds_f2(uint32_t f)
+void dds_f2(freq_t f)
 {
     f = dds_convf(f);
 

@@ -3,9 +3,10 @@
 
 #include "state.h"
 #include "radio.h"
+#include "freq.h"
 
-volatile uint32_t f;
-volatile uint32_t f_step;
+volatile freq_t f;
+volatile freq_t f_step;
 
 void set_cw(void)
 {
@@ -31,7 +32,7 @@ void freq_step(signed char dir)
     if ((f < F_MIN) || (f>(0xffffffff - F_MAX))) f = F_MIN;
     else if (f>F_MAX) f = F_MAX;
 
-    state |= F_CHANGED;
+    state |= F_SMALL_CHANGE;
 }
 
 void step_up()
@@ -54,8 +55,8 @@ void radio_init(void)
 
     set_cw();
 
-    f = 70000000;
-    f_step = 1000;
+    f = MHZ_f(7);
+    f_step = KHZ_f(0, 1);
 
     state |= F_CHANGED | LCD_REDRAW;
 }

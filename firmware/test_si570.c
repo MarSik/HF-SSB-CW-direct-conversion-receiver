@@ -3,8 +3,9 @@
 
 #include "i2c.h"
 #include "si570.h"
+#include "freq.h"
 
-extern uint32_t Fdco; //PLL frequency in Mhz (11bit.21bit)
+extern freq_t Fdco; //PLL frequency in Mhz (11bit.21bit)
 extern uint8_t N1; //1 and all even numbers up to 128
 extern uint8_t HSDIV; //11,9,7,6,5,4
 extern uint16_t RFREQ_full; //10bit
@@ -133,7 +134,7 @@ void test_f(uint32_t f)
 
 int main(void)
 {
-    uint32_t f;
+    freq_t f;
 
     test_get_oscfreq();
     test_new_oscfreq();
