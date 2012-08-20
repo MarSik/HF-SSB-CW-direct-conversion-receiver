@@ -13,9 +13,9 @@ extern uint32_t RFREQ_frac; //28bit
 
 uint8_t *test_data = NULL;
 
-int i2c_read(uint8_t slave, uint8_t count, uint8_t *data)
+int i2c_read(uint8_t _slave, uint8_t count, uint8_t *data)
 {
-    uint8_t reg = *data;
+    uint8_t _reg = *data;
     uint8_t oldcount = count;
 
     uint8_t *p = test_data;

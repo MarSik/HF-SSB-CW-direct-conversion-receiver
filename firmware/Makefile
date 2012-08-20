@@ -34,4 +34,4 @@ LDEXTRA = -lm
 
 
 tests:
-	gcc -DTEST -o test_si570 -Wall test_si570.c si570.c
+	gcc -DTEST -lm -o test_si570 -Wall test_si570.c si570.c freq.c

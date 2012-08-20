@@ -13,12 +13,14 @@
 #include "interface.h"
 #include "spi.h"
 #include "dds.h"
+#include "si570.h"
 #include "state.h"
 #include "radio.h"
+#include "freq.h"
 
 int main(void)
 {
-    char buffer[9];
+    uint8_t buffer[9];
     uint8_t i;
     uint8_t fl = 0;
     const uint8_t *extra = NULL;
@@ -92,7 +94,9 @@ int main(void)
             state &= ~F_CHANGED;
 
             // update DDS frequency
-            dds_f1(f);
+            //dds_f1(f);
+            si570_set_f(f);
+            si570_store(1);
         }
 
         if (state & LCD_REDRAW) {
@@ -101,21 +105,9 @@ int main(void)
             lcd_mode(LCD_DATA);
 
             // print Mhz
-            ultoa((f/10000000), buffer, 10);
-            for(i=2; i>strlen(buffer); i--) lcd_put(' ');
-            lcd_write((unsigned char*)buffer);
-            lcd_put('.');
-
-            // print kHz
-            ultoa((f % 10000000) / (10000), buffer, 10);
-            for(i=3; i>strlen(buffer); i--) lcd_put('0');
-            lcd_write((unsigned char*)buffer);
-            lcd_put('.');
-
-            // print Hz
-            ultoa((f % 10000) / 10, buffer, 10);
-            for(i=3; i>strlen(buffer); i--) lcd_put('0');
-            lcd_write((unsigned char*)buffer);
+            f2str(f, buffer, 10);
+            if (strlen(buffer) < 10) lcd_put(' ');
+            lcd_write(buffer);
 
             // print step size
             if (state & ST_CW) lcd_put(0x00);
@@ -125,18 +117,18 @@ int main(void)
             if (f_step<1000) {
                 utoa(f_step, buffer, 10);
                 for(i=4; i>strlen(buffer); i--) lcd_put(' ');
-                lcd_write((unsigned char*)buffer);
+                lcd_write(buffer);
             }
             else if (f_step<1000000) {
                 utoa(f_step/1000, buffer, 10);
                 for(i=3; i>strlen(buffer); i--) lcd_put(' ');
-                lcd_write((unsigned char*)buffer);
+                lcd_write(buffer);
                 lcd_put('k');
             }
             else {
                 utoa(f_step/1000000, buffer, 10);
                 for(i=3; i>strlen(buffer); i--) lcd_put(' ');
-                lcd_write((unsigned char*)buffer);
+                lcd_write(buffer);
                 lcd_put('M');
             }
 

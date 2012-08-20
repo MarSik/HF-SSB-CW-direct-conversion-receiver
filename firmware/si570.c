@@ -102,8 +102,9 @@ uint8_t si570_set_f(freq_t f)
  * offset RFREQ
  * checks for maximum change of 3500ppm
  */
-uint8_t si570_step_f(int16_t f)
+uint8_t si570_step_f(int32_t f)
 {
+    return 0;
 }
 
 /*
@@ -154,11 +155,22 @@ void si570_init(void)
 #include <stdio.h>
 void si570_print(void)
 {
-    printf("Fout : %08lx %012.7lf\n", Fout, (double)Fout / (1 << 21));
-    printf("XTAL : %08lx %012.7lf\n", 4*XTAL, (double)XTAL / (1 << 19));
-    printf("Fdco : %08lx %012.7lf\n", Fdco, (double)Fdco / (1 << 21));
-    printf("FdcoT: %08lx %012.7lf\n", Fdco_min, (double)Fdco_min / (1 << 21));
-    printf("FdcoM: %08lx %012.7lf\n", Fdco_max, (double)Fdco_max / (1 << 21));
+    uint8_t buffer[17];
+    f2str(Fout, buffer, 16);
+    printf("Fout : %08lx %016s\n", Fout, buffer);
+
+    f2str(XTAL*4, buffer, 16);
+    printf("XTAL : %08lx %016s\n", 4*XTAL, buffer);
+
+    f2str(Fdco, buffer, 16);
+    printf("Fdco : %08lx %016s\n", Fdco, buffer);
+
+    f2str(Fdco_min, buffer, 16);
+    printf("FdcoT: %08lx %016s\n", Fdco_min, buffer);
+
+    f2str(Fdco_max, buffer, 16);
+    printf("FdcoM: %08lx %016s\n", Fdco_max, buffer);
+
     printf("RFREQ: %03x %08lx %.6lf\n", RFREQ_full, RFREQ_frac, RFREQ_full + (double)RFREQ_frac/(1 << 28));
     printf("HSDIV: %d\n", HSDIV);
     printf("   N1: %d\n", N1);
