@@ -2,13 +2,17 @@
 #include "i2c.h"
 #include "si570.h"
 
+/* The algorithms and data structures used here are only
+ * ment for CMOS version of the Si570 chip and for
+ * using in QSD/QSE transceiver operating up to 30Mhz
+ */
+
 /*
  * All four following frequency vars have to have the real value divided by 4
  * to fit into the datatype and to play nicely with the QSD/QSE Johnson counters
  */
 uint32_t XTAL = SI570_XTAL / 4; //oscillator's XTAL frequency in Mhz / 4 (11bit.21bit)
 uint32_t Fdco; //PLL frequency in Mhz (11bit.21bit)
-#define Fdco_tgt ((uint32_t)4900 << (21 - 2)) // target PLL freq 4900Mhz / 4
 uint32_t Fout; //real frequency in Mhz (11bit.21bit)
 
 /*
@@ -24,12 +28,14 @@ uint32_t RFREQ_frac; //28bit
  */
 uint8_t si570_set_f(uint32_t f)
 {
-    uint16_t dividers = Fdco_tgt / f;
+    int i;
+    uint16_t dividers = Fdco_min / f;
+    if (Fdco_min % f) ++dividers; // compensate for rounding error
 
     // find the highest HSDIV that allows setting of the desired freq.
     HSDIV = 11;
-    while ((dividers / HSDIV) > 128) {
-        --HSDIV;
+    while(1) {
+        if (HSDIV < 4) return 1; // divider error
 
         if (HSDIV == 10 ||
             HSDIV == 8) {
@@ -37,28 +43,41 @@ uint8_t si570_set_f(uint32_t f)
             continue;
         }
 
-        if (HSDIV < 4) return 1; // divider error
+        if ((dividers / HSDIV) > 128) {
+            return 1;
+        }
+
+
+        // find N1 that matches the computed HSDIV
+        N1 = dividers / HSDIV;
+        if (dividers % HSDIV) ++N1; // compensate for rounding error
+
+        if (N1 != 1 && N1 & 0b1) ++N1; //N1 must be even
+
+        // recompute Fdco
+        Fdco = f * HSDIV * N1;
+
+        // check for Fdco
+        // if the Fdco is too high, we might have a better
+        // value with different HSDIV (better rounding)
+        if (Fdco > Fdco_max) {
+            --HSDIV;
+            continue;
+        }
+
+        break;
     }
-
-    // find N1 that matches the computed HSDIV
-    N1 = dividers / HSDIV;
-    if (dividers % HSDIV) ++N1; // we need to round up in the fractional case
-
-    // recompute dividers to account for rounding errors)
-    dividers = HSDIV * N1;
-    Fdco = f * dividers;
 
     RFREQ_full = Fdco / XTAL; // full part
     uint32_t rem = Fdco % XTAL; // remainder
 
     // compute fractional part of RFREQ
     RFREQ_frac = 0;
-    int i;
 
     // compute 28 bits, but break if the remainder is 0
     for(i = 28; (rem > 0) && (i > 0); --i) {
-        rem <<= 1; //shift
-        RFREQ_frac <<= 1;
+        rem <<= 1; //shift the remainder (manual division)
+        RFREQ_frac <<= 1; //shift the fractional part to make space for new bit
         if (rem > XTAL) {
             RFREQ_frac |= 0x01;
             rem -= XTAL;
@@ -67,6 +86,9 @@ uint8_t si570_set_f(uint32_t f)
 
     // fix the shift if we exited the loop early
     RFREQ_frac <<= i;
+
+    // save new fout
+    Fout = f;
 
     return 0;
 }
@@ -85,7 +107,7 @@ uint8_t si570_step_f(int16_t f)
 void si570_store(uint8_t freezedco)
 {
     uint8_t data[7] = {
-        7,
+        SI570_REGISTER,
         ((HSDIV - 4) << 5) + ((N1 - 1) >> 2),
         (((N1 - 1) & 0x3) << 6) + (RFREQ_full >> 4),
         ((RFREQ_full & 0xF) << 4) + ((RFREQ_frac) >> 24),
@@ -102,7 +124,7 @@ void si570_store(uint8_t freezedco)
  */
 void si570_load(void)
 {
-    uint8_t data[6] = {0x7, 0, 0, 0, 0, 0};
+    uint8_t data[6] = {SI570_REGISTER, 0, 0, 0, 0, 0};
 
     i2c_read(SI570_ADDR, 6, data);
 
@@ -120,16 +142,19 @@ void si570_init(void)
 {
     si570_load();
     Fdco = SI570_OUT * HSDIV * N1;
+    Fout = SI570_OUT;
 }
 
 #ifdef TEST
 #include <stdio.h>
 void si570_print(void)
 {
-    printf("XTAL : %08lx %lf\n", XTAL, (double)XTAL / (1 << 21));
-    printf("Fdco : %08lx %lf\n", Fdco, (double)Fdco / (1 << 21));
-    printf("FdcoT: %08lx %lf\n", Fdco_tgt, (double)Fdco_tgt / (1 << 21));
-    printf("RFREQ: %03x %08lx %lf\n", RFREQ_full, RFREQ_frac, RFREQ_full + (double)RFREQ_frac/(1 << 28));
+    printf("Fout : %08lx %012.7lf\n", Fout, (double)Fout / (1 << 21));
+    printf("XTAL : %08lx %012.7lf\n", 4*XTAL, (double)XTAL / (1 << 19));
+    printf("Fdco : %08lx %012.7lf\n", Fdco, (double)Fdco / (1 << 21));
+    printf("FdcoT: %08lx %012.7lf\n", Fdco_min, (double)Fdco_min / (1 << 21));
+    printf("FdcoM: %08lx %012.7lf\n", Fdco_max, (double)Fdco_max / (1 << 21));
+    printf("RFREQ: %03x %08lx %.6lf\n", RFREQ_full, RFREQ_frac, RFREQ_full + (double)RFREQ_frac/(1 << 28));
     printf("HSDIV: %d\n", HSDIV);
     printf("   N1: %d\n", N1);
 }
