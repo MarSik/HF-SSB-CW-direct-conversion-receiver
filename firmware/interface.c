@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
 #include <avr/io.h>
@@ -38,42 +39,20 @@ void interface_init(void)
     // save inital rotary state
     rotary_old = ((ROTARY_PIN >> ROTARY_SHIFT) & 0b11) << 2;
 
-    /* rotary encoder pins are change interrupt 16, 17, 18 */
     /* button interrupt pins are 19, 20, 21, 22 */
     PCICR |= _BV(PCIE2);
-    PCMSK2 |= _BV(PCINT16) | _BV(PCINT17) | _BV(PCINT18) | _BV(PCINT19) | _BV(PCINT20) | _BV(PCINT21) | _BV(PCINT22);
+    PCMSK2 |= _BV(PCINT19) | _BV(PCINT20) | _BV(PCINT21) | _BV(PCINT22);
 
     /* serial input 0 PCINT24, PCINT25, also used for morse key */
+    /* rotary encoder pins are change interrupt 29, 30, 31 */
     PCICR |= _BV(PCIE3);
-    PCMSK3 |= _BV(PCINT24) | _BV(PCINT25);
+    PCMSK3 |= _BV(PCINT24) | _BV(PCINT25) | _BV(PCINT29) | _BV(PCINT30) | _BV(PCINT31);
 }
 
 /* pin change int for morse key */
 ISR(PCINT3_vect){
-}
-
-/* pin change int for keys */
-ISR(PCINT2_vect){
-    if (!(state & ST_CW) && (BUTTON_PIN & _BV(BUTTON_1)) == 0) {
-        set_cw();
-        state |= LCD_REDRAW;
-    }
-
-    if ((state & ST_CW) && (BUTTON_PIN & _BV(BUTTON_2)) == 0) {
-        set_ssb();
-        state |= LCD_REDRAW;
-    }
-
-    if ((BUTTON_PIN & _BV(BUTTON_3)) == 0) {
-        state |= LCD_REDRAW;
-    }
-
-    if ((BUTTON_PIN & _BV(BUTTON_4)) == 0) {
-        state |= LCD_REDRAW;
-    }
-
     if ((ROTARY_PIN & ROTARY_BUTTON) == 0) {
-        
+
     }
 
     /* get rotary vector[oldB oldA B A]*/
@@ -97,5 +76,33 @@ ISR(PCINT2_vect){
 
     /* save old rotary */
     rotary_old = (r & 0b11) << 2;
+}
+
+/* pin change int for keys */
+ISR(PCINT2_vect){
+    if (!(state & ST_CW) && (BUTTON_PIN & _BV(BUTTON_1)) == 0) {
+        if (error) {
+            radio_set_error(NULL, 0);
+            state |= LCD_REDRAW;
+            return;
+        }
+
+        set_cw();
+        state |= LCD_REDRAW;
+    }
+
+    if ((state & ST_CW) && (BUTTON_PIN & _BV(BUTTON_2)) == 0) {
+        set_ssb();
+        state |= LCD_REDRAW;
+    }
+
+    if ((BUTTON_PIN & _BV(BUTTON_3)) == 0) {
+        state |= LCD_REDRAW;
+    }
+
+    if ((BUTTON_PIN & _BV(BUTTON_4)) == 0) {
+        state |= LCD_REDRAW;
+    }
+
 }
 

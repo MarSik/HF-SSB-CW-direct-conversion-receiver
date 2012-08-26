@@ -3,8 +3,8 @@
 #include <math.h>
 #include "freq.h"
 
-#ifndef utoa
-uint8_t *utoa(uint16_t v, uint8_t *s, uint8_t radix)
+#ifndef ultoa
+uint8_t *ultoa(uint32_t v, uint8_t *s, uint8_t radix)
 {
     uint8_t *start = s;
     uint8_t *p = s;
@@ -42,7 +42,7 @@ uint8_t* f2str(freq_t f, uint8_t *buffer, uint8_t len)
     uint8_t *p;
 
     // Mhz
-    utoa(f_MHZ(f), buffer, 10);
+    ultoa(f_MHZ(f), buffer, 10);
 
     i = len - strlen(buffer);
     j = 0;
@@ -51,7 +51,7 @@ uint8_t* f2str(freq_t f, uint8_t *buffer, uint8_t len)
     // multiply fractional part to get the rest of required digits
     while (j < i) {
         if (j & 0b11) {
-            f = 10 * f_KHZ(f);
+            f = 10 * (f - MHZ_f(f_MHZ(f)));
             *p = '0' + f_MHZ(f);
         }
         else{

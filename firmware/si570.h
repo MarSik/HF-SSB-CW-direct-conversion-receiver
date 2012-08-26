@@ -8,23 +8,24 @@
 
 #include "freq.h"
 
-#define SI570_ADDR 0x55
+#define SI570_ADDRESS 0x55
 #define SI570_REGISTER 7
+#define SI570_MEM_REGISTER 135
+#define SI570_DCO_REGISTER 137
 
-// frequencies of the used Si570 in uint32_t used as fixed point using 21 bit for fractional
-#define SI570_OUT 0x1c28f5c //output freq divided by 4 (52.320 / 4 Mhz) (11bit.21bit)
-#define SI570_XTAL 0xe495c75 //
+// frequencies of the used Si570 in uint32_t used as fixed point using 1 bit for fractional
+#define SI570_OUT HZ_f(14, 80, 0) //output freq divided by 4 (52.320 / 4 Mhz)
+#define SI570_XTAL FHZ_f(114, 292, 536, 721)  //internal xtal frequency
 
-#define Fdco_min ((freq_t)4856 << (21 - 2)) // target PLL freq 4900Mhz / 4
-#define Fdco_max ((freq_t)5670 << (21 - 2)) // maximum PLL freq / 4
+#define Fdco_min MHZ_f(4856 / 4) // target PLL freq 4856Mhz / 4
+#define Fdco_max MHZ_f(5670 / 4) // maximum PLL freq 5670Mhz / 4
 
 #ifdef TEST
 void si570_print(void);
 #endif
 
-void si570_init(void);
-void si570_load(void);
-void si570_store(uint8_t freezedco);
+uint8_t si570_init(void);
+uint8_t si570_store(uint8_t freezedco);
 uint8_t si570_step_f(int32_t f);
 uint8_t si570_set_f(freq_t f);
 

@@ -1,12 +1,25 @@
 #include <avr/io.h>
 #include <util/delay.h>
+#include <avr/eeprom.h>
 
 #include "state.h"
 #include "radio.h"
 #include "freq.h"
+#include "si570.h"
 
 volatile freq_t f;
+volatile freq_t f_staged;
 volatile freq_t f_step;
+
+volatile char *error = NULL;
+volatile uint8_t error_id;
+
+void radio_set_error(char *eep_string, uint8_t id)
+{
+    error = eep_string;
+    error_id = id;
+    state |= LCD_REDRAW;
+}
 
 void set_cw(void)
 {
@@ -27,10 +40,12 @@ void set_ssb(void)
 
 void freq_step(signed char dir)
 {
-    f += OFFSET_DIR * dir * f_step;
+    if (f_staged) return;
 
-    if ((f < F_MIN) || (f>(0xffffffff - F_MAX))) f = F_MIN;
-    else if (f>F_MAX) f = F_MAX;
+    f_staged = f + OFFSET_DIR * dir * f_step;
+
+    if ((f_staged < F_MIN) || (f_staged>(0xffffffff - F_MAX))) f_staged = F_MIN;
+    else if (f_staged>F_MAX) f_staged = F_MAX;
 
     state |= F_SMALL_CHANGE;
 }
@@ -55,8 +70,14 @@ void radio_init(void)
 
     set_cw();
 
-    f = MHZ_f(7);
+    f = 0;
+    f_staged = SI570_OUT;
     f_step = KHZ_f(0, 1);
+}
 
-    state |= F_CHANGED | LCD_REDRAW;
+void radio_new_freq_ready(void)
+{
+    f = f_staged;
+    f_staged = 0;
+    state |= LCD_REDRAW;
 }

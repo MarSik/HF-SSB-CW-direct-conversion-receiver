@@ -2,7 +2,14 @@
 #define LANG_DDS_02012012_MarSik
 
 #include <stdint.h>
+
+#ifndef TEST
 #include <avr/eeprom.h>
+#endif
+
+#ifndef EEMEM
+#define EEMEM
+#endif
 
 /*
  * Language definitions
@@ -10,6 +17,11 @@
 
 extern const uint8_t s_title[] EEMEM;
 extern const uint8_t s_author[] EEMEM;
+
+extern const uint8_t s_initializing[] EEMEM;
+extern const uint8_t s_i2c_error[] EEMEM;
+extern const uint8_t s_si570_error[] EEMEM;
+
 extern const uint8_t s_hex_prefix[] EEMEM;
 extern const uint8_t s_cw[] EEMEM;
 extern const uint8_t s_ssb[] EEMEM;

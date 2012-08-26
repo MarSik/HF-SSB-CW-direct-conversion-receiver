@@ -14,8 +14,8 @@
 
 #define OFFSET_DIR ((signed char)1)
 
-#define STEP_MAX MHZ_f(1)
-#define STEP_MIN HZ_f(0, 0, 10)
+#define STEP_MAX KHZ_f(0, 100)
+#define STEP_MIN HZ_f(0, 0, 1)
 
 #define FILTER_PORT PORTD
 #define FILTER_DDR DDRD
@@ -26,8 +26,15 @@
    so we can use fixed point with one decimal */
 extern volatile freq_t f;
 extern volatile freq_t f_step;
+extern volatile freq_t f_staged;
 
 void radio_init(void);
+void radio_new_freq_ready(void);
+
+extern volatile char *error;
+extern volatile uint8_t error_id;
+void radio_set_error(char *eep_string, uint8_t id);
+
 
 void set_cw(void);
 void set_ssb(void);

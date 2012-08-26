@@ -11,6 +11,7 @@
 #include "bandplan.h"
 #include "ir.h"
 #include "interface.h"
+#include "i2c.h"
 #include "spi.h"
 #include "dds.h"
 #include "si570.h"
@@ -32,17 +33,22 @@ int main(void)
     ADCSRA &= ~_BV(ADEN);
 
     lcd_init();
-    ir_init();
-    interface_init();
-    radio_init();
-    spi_init();
-    dds_init();
-    sei();
 
     lcd_eep_write(s_title);
     lcd_line(1);
     lcd_eep_write(s_author);
     _delay_ms(1000);
+
+    ir_init();
+    interface_init();
+    radio_init();
+
+    i2c_init();
+    sei();
+
+    si570_init();
+    //spi_init();
+    //dds_init();
 
     state |= LCD_REDRAW;
     lcd_clear();
@@ -90,13 +96,14 @@ int main(void)
         }
 
         if (state & F_CHANGED){
-            fl = bandplan(f_sf(f), &extra);
             state &= ~F_CHANGED;
 
             // update DDS frequency
             //dds_f1(f);
-            si570_set_f(f);
+            si570_set_f(f_staged);
             si570_store(1);
+
+            state |= LCD_REDRAW;
         }
 
         if (state & LCD_REDRAW) {
@@ -105,55 +112,69 @@ int main(void)
             lcd_mode(LCD_DATA);
 
             // print Mhz
-            f2str(f, buffer, 10);
-            if (strlen(buffer) < 10) lcd_put(' ');
-            lcd_write(buffer);
+            if (f > 0) {
+                f2str(f, buffer, 10);
+                if (strlen(buffer) < 10) lcd_put(' ');
+                lcd_write(buffer);
 
-            // print step size
-            if (state & ST_CW) lcd_put(0x00);
-            else lcd_put(0x01);
+                // print filter size
+                if (state & ST_CW) lcd_put(0x00);
+                else lcd_put(0x01);
 
-            lcd_put(' ');
-            if (f_step<1000) {
-                utoa(f_step, buffer, 10);
-                for(i=4; i>strlen(buffer); i--) lcd_put(' ');
-                lcd_write(buffer);
+                lcd_put(' ');
+
+                if (f_MHZ(f_step)) {
+                    utoa(f_MHZ(f_step), buffer, 10);
+                    for(i=3; i>strlen(buffer); i--) lcd_put(' ');
+                    lcd_write(buffer);
+                    lcd_put('M');
+                }
+                else if (f_KHZ(f_step)) {
+                    utoa(f_KHZ(f_step), buffer, 10);
+                    for(i=3; i>strlen(buffer); i--) lcd_put(' ');
+                    lcd_write(buffer);
+                    lcd_put('k');
+                }
+                else {
+                    utoa(f_HZ(f_step), buffer, 10);
+                    for(i=4; i>strlen(buffer); i--) lcd_put(' ');
+                    lcd_write(buffer);
+                }
+
             }
-            else if (f_step<1000000) {
-                utoa(f_step/1000, buffer, 10);
-                for(i=3; i>strlen(buffer); i--) lcd_put(' ');
-                lcd_write(buffer);
-                lcd_put('k');
-            }
-            else {
-                utoa(f_step/1000000, buffer, 10);
-                for(i=3; i>strlen(buffer); i--) lcd_put(' ');
-                lcd_write(buffer);
-                lcd_put('M');
-            }
+            else lcd_eep_write(s_initializing);
 
             lcd_line(1);
             lcd_mode(LCD_DATA);
 
-            if (fl & CW) {
-                lcd_eep_write(s_cw);
-                lcd_put(' ');
+            if (error) {
+                    lcd_eep_write(error);
+                    utoa(error_id, buffer, 16);
+                    lcd_write(buffer);
             }
+            else if (f>0) {
+                fl = bandplan(f_sf(f), &extra);
 
-            if (fl & SSB) {
-                lcd_eep_write(s_ssb);
-                lcd_put(' ');
+                if (fl & CW) {
+                    lcd_eep_write(s_cw);
+                    lcd_put(' ');
+                }
+
+                if (fl & SSB) {
+                    lcd_eep_write(s_ssb);
+                    lcd_put(' ');
+                }
+
+                if (fl & DIGI) {
+                    lcd_eep_write(s_digi);
+                    lcd_put(' ');
+                }
+
+                if (TXOK(fl)) lcd_put(0x2);
+
+                if (extra) lcd_eep_write(extra);
+                else lcd_write("        ");
             }
-
-            if (fl & DIGI) {
-                lcd_eep_write(s_digi);
-                lcd_put(' ');
-            }
-
-            if (TXOK(fl)) lcd_put(0x2);
-
-            if (extra) lcd_eep_write(extra);
-            else lcd_write("        ");
         }
 
         /* sleep the cpu to minimize RF noise */

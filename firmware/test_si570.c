@@ -53,7 +53,7 @@ void test_get_oscfreq(void)
 
     if(HSDIV != 11 ||
        N1 != 8 ||
-       Fdco != 0x9ae147a0 ||
+       Fdco != FHZ_f(1239, 40, 0, 0) || //1239040000
        RFREQ_full != 0x02b ||
        RFREQ_frac != 0x5d22bd7) {
         printf("=== error in test_get_oscfreq ===\n");
@@ -74,7 +74,7 @@ void test_set_oscfreq(void)
     si570_store(0);
 
     if(*p2 != SI570_REGISTER) {
-        printf("=== error in test_set_oscfreq ===\nbad address %x\n", *p2);
+        printf("=== error in test_set_oscfreq ===\nbad register %x (%x)\n", *p2, SI570_REGISTER);
         return;
     }
     p2++;
@@ -95,13 +95,13 @@ void test_new_oscfreq(void)
 {
     test_data = get_oscfreq_data;
     si570_init();
-    si570_set_f(0x1c28f5c);
+    si570_set_f(KHZ_f(14, 80));
 
     if(HSDIV != 11 ||
        N1 != 8 ||
-       Fdco != 0x9ae147a0 ||
+       Fdco != FHZ_f(1239, 40, 0, 0) || //1239040000
        RFREQ_full != 0x02b ||
-       RFREQ_frac != 0x05d22bf7) {
+       RFREQ_frac != 0x05d22c20) {
         printf("=== error in test_new_oscfreq ===\n");
         si570_print();
     }
@@ -140,7 +140,7 @@ int main(void)
     test_new_oscfreq();
     test_set_oscfreq();
 
-    for(f = (3 << 21); f < (31 << 21); ++f)
+    for(f = MHZ_f(3); f <= MHZ_f(30); ++f)
         test_f(f);
 
     return 0;

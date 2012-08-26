@@ -3,13 +3,13 @@
 
 #include <avr/io.h>
 
-#define ROTARY_PORT PORTC
-#define ROTARY_PIN PINC
-#define ROTARY_DDR DDRC
-#define ROTARY_BUTTON 0
-#define ROTARY_A 1
-#define ROTARY_B 2
-#define ROTARY_SHIFT 1 // how much bits must be shifted left to get AB on the two LSB (mask 0b11)
+#define ROTARY_PORT PORTD
+#define ROTARY_PIN PIND
+#define ROTARY_DDR DDRD
+#define ROTARY_BUTTON 5
+#define ROTARY_A 6
+#define ROTARY_B 7
+#define ROTARY_SHIFT 6 // how much bits must be shifted left to get AB on the two LSB (mask 0b11)
 #define ROTARY_DIR 1 //1 or -1 if need to reverse rotation arises
 
 #define BUTTON_PORT PORTC

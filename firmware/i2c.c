@@ -1,106 +1,114 @@
 #include <stdlib.h>
 #include <avr/io.h>
 #include <util/twi.h>
+#include <avr/interrupt.h>
+#include "i2c.h"
+#include "lang.h"
+#include "radio.h"
 
-int i2c_write_raw(uint8_t slave, uint8_t count, uint8_t *data)
+static volatile uint8_t address = 0x00;
+static volatile uint8_t *p; // pointer to buffer data
+
+static volatile uint8_t reg;
+static volatile uint8_t count;
+
+static volatile i2c_callback cb;
+static volatile void *cb_data;
+
+ISR(TWI_vect)
 {
-    uint8_t sent = 0;
-
-    // send start bit
-    TWCR = _BV(TWINT) | _BV(TWSTA) | _BV(TWEN);
-
-    // wait for the bus
-    while (!(TWCR & (1<<TWINT)))
-        ;
-
-    // check if the start bit was transmitted successfully
-    if ((TWSR & 0xF8) != TW_START)
-        return -1;
-
-    // send address + 0 bit for write
-    TWDR = slave << 1;
-    TWCR = (1<<TWINT) | (1<<TWEN);
-
-    // wait for the bus
-    while (!(TWCR & (1<<TWINT)))
-        ;
-
-    // check for errors
-    if ((TWSR & 0xF8) != TW_MT_SLA_ACK)
-        return -2;
-
-    while (count > sent) {
-        TWDR = *data;
-        TWCR = (1<<TWINT) | (1<<TWEN);
-
-        while (!(TWCR & (1<<TWINT)))
-            ;
-
-        if ((TWSR & 0xF8) !=TW_MT_DATA_ACK)
-            break;
-
-        sent++;
-        data++;
+    if (TW_STATUS == TW_START) {
+        // send address masked for write
+        TWDR = address & (~1);
+        TWCR = (1<<TWINT) | (1<<TWIE) | (1<<TWEN);
     }
 
-    return sent;
-}
-
-int i2c_write(uint8_t slave, uint8_t count, uint8_t *data)
-{
-    int sent = i2c_write_raw(slave, count, data);
-
-    // stop condition
-    TWCR = (1<<TWINT)|(1<<TWEN)|(1<<TWSTO);
-
-    return sent;
-}
-
-int i2c_read(uint8_t slave, uint8_t count, uint8_t *data)
-{
-    int read = i2c_write_raw(slave, 1, data);
-
-    // send start bit
-    TWCR = _BV(TWINT) | _BV(TWSTA) | _BV(TWEN);
-
-    // wait for the bus
-    while (!(TWCR & (1<<TWINT)))
-        ;
-
-    // check if the start bit was transmitted successfully
-    if ((TWSR & 0xF8) != TW_START)
-        return -1;
-
-    // send address + 1 bit for read
-    TWDR = 1 + (slave << 1);
-    TWCR = (1<<TWINT) | (1<<TWEN);
-
-    // wait for the bus
-    while (!(TWCR & (1<<TWINT)))
-        ;
-
-    // check for errors
-    if ((TWSR & 0xF8) != TW_MT_SLA_ACK)
-        return -2;
-
-    while (count > read) {
-        if (count == read + 1)
-            TWCR = (1<<TWINT);
-        else
-            TWCR = (1<<TWINT) | (1<<TWEA);
-
-        while (!(TWCR & (1<<TWINT)))
-            ;
-
-        if (((TWSR & 0xF8) != 0x50) ||
-            ((TWSR & 0xF8) != 0x58))
-            break;
-
-        *data = TWDR;
-
-        read++;
-        data++;
+    else if (TW_STATUS == TW_MT_SLA_ACK) {
+        TWDR = reg;
+        TWCR = (1<<TWINT) | (1<<TWIE) | (1<<TWEN);
     }
 
-    return read;
+    else if (TW_STATUS == TW_MT_DATA_ACK) {
+        // read requested, restart in MR mode
+        if (address & 0x1) {
+            TWCR = (1<<TWINT) | _BV(TWIE) | _BV(TWSTA) | _BV(TWEN);
+            return;
+        }
+
+        if (!count) {
+            TWCR = (1<<TWINT) | (1<<TWIE) | (1<<TWEN) | (1<<TWSTO);
+            address = 0x00;
+            if (cb) cb(cb_data, TW_STATUS);
+            return;
+        }
+
+        TWDR = *p;
+        TWCR = (1<<TWINT) | (1<<TWIE) | (1<<TWEN);
+
+        ++p;
+        --count;
+    }
+
+    else if (TW_STATUS == TW_REP_START) {
+        // send address + 1 bit for read
+        TWDR = address;
+        TWCR = (1<<TWINT) | (1<<TWIE) | (1<<TWEN);
+    }
+
+    else if (TW_STATUS == TW_MR_SLA_ACK) {
+        --count;
+
+        if (count) TWCR = (1<<TWINT) | (1<<TWIE) | (1<<TWEN) | (1<<TWEA);
+        else TWCR = (1<<TWINT) | (1<<TWIE) | (1<<TWEN);
+    }
+
+    else if (TW_STATUS == TW_MR_DATA_ACK) {
+        *p = TWDR;
+        ++p;
+
+        --count;
+        if (count) TWCR = (1<<TWINT) | (1<<TWIE) | (1<<TWEN) | (1<<TWEA);
+        else TWCR = (1<<TWINT) | (1<<TWIE) | (1<<TWEN);
+    }
+
+    else if (TW_STATUS == TW_MR_DATA_NACK) {
+        TWCR = (1<<TWINT) | (1<<TWIE) | (1<<TWEN) | (1<<TWSTO);
+        address = 0x00;
+        if (cb) cb(cb_data, TW_STATUS);
+    }
+
+    // report errors
+    else {
+        radio_set_error(s_i2c_error, TW_STATUS);
+    }
 }
+
+void i2c_init(void)
+{
+    DDRC &=  (~0b11); //SDA. SCL as inputs
+    PORTC |= 0b11; // pullups on SDA and SCL
+}
+
+uint8_t i2c_status(void)
+{
+    return TWSR;
+}
+
+int i2c_transfer(const uint8_t slave, const uint8_t start_reg,
+                 uint8_t *buffer, const uint8_t data_count,
+                 const i2c_callback cb0, void *cb_data0)
+{
+    if (address) return -1;
+
+    address = slave;
+    reg = start_reg;
+    p = buffer;
+    count = data_count;
+    cb = cb0;
+    cb_data = cb_data0;
+
+    TWCR = _BV(TWINT) | _BV(TWIE) | _BV(TWSTA) | _BV(TWEN);
+
+    return 0;
+}
+

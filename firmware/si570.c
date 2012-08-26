@@ -1,20 +1,26 @@
 #include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 #include "freq.h"
 #include "i2c.h"
 #include "si570.h"
+#include "radio.h"
+#include "lang.h"
 
 /* The algorithms and data structures used here are only
  * ment for CMOS version of the Si570 chip and for
  * using in QSD/QSE transceiver operating up to 30Mhz
  */
 
+#define _BV(bit) (1 << (bit))
+
 /*
  * All four following frequency vars have to have the real value divided by 4
  * to fit into the datatype and to play nicely with the QSD/QSE Johnson counters
  */
-freq_t XTAL = SI570_XTAL / 4; //oscillator's XTAL frequency in Mhz / 4 (11bit.21bit)
-freq_t Fdco; //PLL frequency in Mhz (11bit.21bit)
-freq_t Fout; //real frequency in Mhz (11bit.21bit)
+freq_t XTAL = SI570_XTAL / 4; //oscillator's XTAL frequency in Mhz / 4
+freq_t Fdco; //PLL frequency in Mhz
+freq_t Fout; //real frequency in Mhz
 
 /*
  * Dividers for Si570 setup
@@ -59,16 +65,19 @@ uint8_t si570_set_f(freq_t f)
 
         if (N1 != 1 && N1 & 0b1) ++N1; //N1 must be even
 
-        // recompute Fdco
-        Fdco = f * HSDIV * N1;
+        // recompute Fdco with lower precision to allow for higher frequencies
+        Fdco = (f >> 7) * HSDIV * N1;
 
         // check for Fdco
         // if the Fdco is too high, we might have a better
         // value with different HSDIV (better rounding)
-        if (Fdco > Fdco_max) {
+        if (Fdco > (Fdco_max >> 7)) {
             --HSDIV;
             continue;
         }
+
+        // recompute full precision Fdco
+        Fdco = f * HSDIV * N1;
 
         break;
     }
@@ -107,13 +116,66 @@ uint8_t si570_step_f(int32_t f)
     return 0;
 }
 
+#define CB_DCO_FROZEN 0
+#define CB_MEM_FROZEN 1
+#define CB_DATA_PUSHED 2
+#define CB_FREQ_READY 3
+
+static const uint8_t freezedco = _BV(4);
+static const uint8_t unfreezedco = 0;
+static const uint8_t freezemem = _BV(5);
+static const uint8_t newfreq = _BV(6);
+static uint8_t freqdata[6];
+
+void si570_store_cb(void *data, uint8_t i2c_status)
+{
+    uint16_t status = (uint16_t)data;
+
+    if ((status & _BV(CB_DATA_PUSHED)) &&
+        (status & _BV(CB_DCO_FROZEN))) {
+
+        status &= (~_BV(CB_DCO_FROZEN));
+
+        i2c_transfer(I2C_WRITE(SI570_ADDRESS), SI570_DCO_REGISTER,
+                     &unfreezedco, 1,
+                     si570_store_cb, (void*)status);
+
+    }
+
+    else if (status & _BV(CB_DATA_PUSHED)) {
+        status = _BV(CB_FREQ_READY);
+
+        i2c_transfer(I2C_WRITE(SI570_ADDRESS), SI570_MEM_REGISTER,
+                     &newfreq, 1,
+                     si570_store_cb, (void*)status);
+    }
+
+    else if ((status & _BV(CB_DCO_FROZEN)) ||
+             (status & _BV(CB_MEM_FROZEN))) {
+
+        status |= _BV(CB_DATA_PUSHED);
+
+        i2c_transfer(I2C_WRITE(SI570_ADDRESS), SI570_REGISTER,
+                     freqdata, 6,
+                     si570_store_cb, (void*)status);
+
+    }
+
+    else if (status & _BV(CB_FREQ_READY)) {
+        radio_new_freq_ready();
+    }
+
+    else {
+        radio_set_error(s_si570_error, status);
+    }
+}
+
 /*
  * Store registers to oscillator
  */
-void si570_store(uint8_t freezedco)
+uint8_t si570_store(uint8_t freezedco)
 {
-    uint8_t data[7] = {
-        SI570_REGISTER,
+    uint8_t freqdata0[6] = {
         ((HSDIV - 4) << 5) + ((N1 - 1) >> 2),
         (((N1 - 1) & 0x3) << 6) + (RFREQ_full >> 4),
         ((RFREQ_full & 0xF) << 4) + ((RFREQ_frac) >> 24),
@@ -122,34 +184,46 @@ void si570_store(uint8_t freezedco)
         RFREQ_frac & 0xff
     };
 
-    i2c_write(SI570_ADDR, 7, data);
+    memcpy(freqdata, freqdata0, 6);
+
+    if (freezedco) {
+        return i2c_transfer(I2C_WRITE(SI570_ADDRESS), SI570_DCO_REGISTER,
+                            &freezedco, 1,
+                            si570_store_cb, (void*)_BV(CB_DCO_FROZEN));
+    }
+    else {
+        return i2c_transfer(I2C_WRITE(SI570_ADDRESS), SI570_MEM_REGISTER,
+                            &freezemem, 1,
+                            si570_store_cb, (void*)_BV(CB_MEM_FROZEN));
+    }
 }
 
-/*
- * Load registers from oscillator
- */
-void si570_load(void)
+void si570_load_cb(void *buffer0, uint8_t i2cstatus)
 {
-    uint8_t data[6] = {SI570_REGISTER, 0, 0, 0, 0, 0};
+    char *buffer = (char*)buffer0;
 
-    i2c_read(SI570_ADDR, 6, data);
+    HSDIV = 4 + (buffer[0] >> 5);
+    N1 = 1 + ((buffer[0] & 0x1F) << 2) + (buffer[1] >> 6);
+    RFREQ_full = ((rfreq_t)(buffer[1] & 0x3F) * 16) + (buffer[2] >> 4);
+    RFREQ_frac = ((rfreq_f_t)(buffer[2] & 0xF) << 24) + ((rfreq_f_t)buffer[3] << 16) + ((rfreq_f_t)buffer[4] << 8) + buffer[5];
 
-    HSDIV = 4 + (data[0] >> 5);
-    N1 = 1 + ((data[0] & 0x1F) << 2) + (data[1] >> 6);
-    RFREQ_full = ((rfreq_t)(data[1] & 0x3F) * 16) + (data[2] >> 4);
-    RFREQ_frac = ((rfreq_f_t)(data[2] & 0xF) << 24) + ((rfreq_f_t)data[3] << 16) + ((rfreq_f_t)data[4] << 8) + data[5];
-}
-
-/*
- * Load all data from Si570 and compute internal
- * oscillator's frequency
- */
-void si570_init(void)
-{
-    si570_load();
     Fdco = SI570_OUT * HSDIV * N1;
     Fout = SI570_OUT;
+
+    radio_new_freq_ready();
 }
+
+/*
+ * Load registers from oscillator and recompute internal
+ * frequencies
+ */
+uint8_t si570_init(void)
+{
+    return i2c_transfer(I2C_READ(SI570_ADDRESS), SI570_REGISTER,
+                        freqdata, 6,
+                        si570_load_cb, freqdata);
+}
+
 
 #ifdef TEST
 #include <stdio.h>
