@@ -100,10 +100,11 @@ int main(void)
 
             // update DDS frequency
             //dds_f1(f);
-            si570_set_f(f_staged);
-            si570_store(1);
-
-            state |= LCD_REDRAW;
+            int big = si570_set_f(f_staged);
+            if (big >= 0) {
+                si570_store(big);
+                state |= LCD_REDRAW;
+            }
         }
 
         if (state & LCD_REDRAW) {

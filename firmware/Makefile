@@ -1,7 +1,7 @@
 # Target device
 MCU = atmega644p
 F_CPU = 8000000
-LFUSE = 0xE2
+LFUSE = 0xDE# crystal 8Mhz, 258CK+65ms
 HFUSE = 0xDA
 EFUSE = 0xFD
 

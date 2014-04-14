@@ -27,7 +27,7 @@ void si570_print(void);
 uint8_t si570_init(void);
 uint8_t si570_store(uint8_t freezedco);
 uint8_t si570_step_f(int32_t f);
-uint8_t si570_set_f(freq_t f);
+int si570_set_f(freq_t f);
 
 
 #endif /* _SI570_H_ */

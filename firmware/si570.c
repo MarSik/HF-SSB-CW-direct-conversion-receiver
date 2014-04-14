@@ -37,16 +37,21 @@ rfreq_f_t RFREQ_frac; //28bit
 /*
  * Recompute all dividers and RFREQ
  */
-uint8_t si570_set_f(freq_t f)
+int si570_set_f(freq_t f)
 {
     int i;
+
+    uint8_t HSDIV_old = HSDIV;
+    uint8_t N1_old = N1;
+    int change = abs((f - Fout) / 1000000);
+
     uint16_t dividers = Fdco_min / f;
     if (Fdco_min % f) ++dividers; // compensate for rounding error
 
     // find the highest HSDIV that allows setting of the desired freq.
     HSDIV = 11;
     while(1) {
-        if (HSDIV < 4) return 1; // divider error
+        if (HSDIV < 4) return -1; // divider error
 
         if (HSDIV == 10 ||
             HSDIV == 8) {
@@ -55,7 +60,7 @@ uint8_t si570_set_f(freq_t f)
         }
 
         if ((dividers / HSDIV) > 128) {
-            return 1;
+            return -1;
         }
 
 
@@ -104,7 +109,13 @@ uint8_t si570_set_f(freq_t f)
     // save new fout
     Fout = f;
 
-    return 0;
+    // check if the change is small (3500ppm and the same dividers) or large
+    if ((N1 == N1_old) &&
+        (HSDIV == HSDIV_old) &&
+        change < 3500) {
+        return 0;
+    }
+    else return 1;
 }
 
 /*
