@@ -19,6 +19,7 @@
 #define BUTTON_2 4
 #define BUTTON_3 5
 #define BUTTON_4 6
+#define BUTTON_MASK 0b01111000
 
 #define KEY_PORT PORTD
 #define KEY_PIN PIND
@@ -30,7 +31,9 @@ void interface_init(void);
 
 typedef enum {
     INTF_FREQ = 0,
-    INTF_CW_SPEED,
+    INTF_TUNER_C,
+    INTF_TUNER_L,
+    INTF_STEP
 } intf_mode_t;
 
 extern volatile intf_mode_t interface_mode;

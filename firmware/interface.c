@@ -6,9 +6,10 @@
 #include "interface.h"
 #include "state.h"
 #include "radio.h"
+#include "tuner.h"
 
 static volatile uint8_t rotary_old;
-volatile intf_mode_t interface_mode;
+volatile intf_mode_t interface_mode = INTF_FREQ;
 
 /* lookup table in a form of bitarray (index is the number of the bit,
    counted from 0 LSB)
@@ -49,7 +50,7 @@ void interface_init(void)
     PCMSK3 |= _BV(PCINT24) | _BV(PCINT25) | _BV(PCINT29) | _BV(PCINT30) | _BV(PCINT31);
 }
 
-/* pin change int for morse key */
+/* pin change int for rotary enc */
 ISR(PCINT3_vect){
     if ((ROTARY_PIN & ROTARY_BUTTON) == 0) {
 
@@ -59,13 +60,17 @@ ISR(PCINT3_vect){
     uint8_t r = ((ROTARY_PIN >> ROTARY_SHIFT) & 0b11) | rotary_old;
 
     if (ROTARY_LOOKUP_NEXT & _BV(r)) {
-        if ((BUTTON_PIN & _BV(BUTTON_4)) == 0) step_up();
+        if (interface_mode == INTF_STEP) step_up();
+        else if (interface_mode == INTF_TUNER_C) tuner_up(BANK_COUT);
+        else if (interface_mode == INTF_TUNER_L) tuner_up(BANK_L);
         else freq_step(F_DIR_UP); // increase freq
         state |= LCD_REDRAW;
     }
 
     else if (ROTARY_LOOKUP_PREV & _BV(r)) {
-        if ((BUTTON_PIN & _BV(BUTTON_4)) == 0) step_down();
+        if (interface_mode == INTF_STEP) step_down();
+        else if (interface_mode == INTF_TUNER_C) tuner_down(BANK_COUT);
+        else if (interface_mode == INTF_TUNER_L) tuner_down(BANK_L);
         else freq_step(F_DIR_DOWN); // decrease freq
         state |= LCD_REDRAW;
     }
@@ -80,28 +85,33 @@ ISR(PCINT3_vect){
 
 /* pin change int for keys */
 ISR(PCINT2_vect){
-    if (!(state & ST_CW) && (BUTTON_PIN & _BV(BUTTON_1)) == 0) {
+    if ((BUTTON_PIN & _BV(BUTTON_1)) == 0) {
         if (error) {
             radio_set_error(NULL, 0);
             state |= LCD_REDRAW;
             return;
         }
 
-        set_cw();
         state |= LCD_REDRAW;
     }
 
-    if ((state & ST_CW) && (BUTTON_PIN & _BV(BUTTON_2)) == 0) {
-        set_ssb();
+    if ((BUTTON_PIN & _BV(BUTTON_2)) == 0) {
         state |= LCD_REDRAW;
+        interface_mode_set(INTF_TUNER_C);
     }
 
     if ((BUTTON_PIN & _BV(BUTTON_3)) == 0) {
         state |= LCD_REDRAW;
+        interface_mode_set(INTF_TUNER_L);
     }
 
     if ((BUTTON_PIN & _BV(BUTTON_4)) == 0) {
         state |= LCD_REDRAW;
+        interface_mode_set(INTF_STEP);
+    }
+    
+    if (BUTTON_PIN & BUTTON_MASK == BUTTON_MASK) {
+        interface_mode_set(INTF_FREQ);
     }
 
 }

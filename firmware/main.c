@@ -13,8 +13,7 @@
 #include "interface.h"
 #include "i2c.h"
 #include "spi.h"
-#include "dds.h"
-#include "si570.h"
+#include "tuner.h"
 #include "state.h"
 #include "radio.h"
 #include "freq.h"
@@ -42,12 +41,12 @@ int main(void)
     ir_init();
     interface_init();
     radio_init();
-
+    spi_init();
     i2c_init();
     sei();
 
-    si570_init();
-    //spi_init();
+    //si570_init();
+    tuner_init(BANK2_INVERT);
     //dds_init();
 
     state |= LCD_REDRAW;
@@ -90,21 +89,9 @@ int main(void)
             }
         }
 
-        if (state & F_SMALL_CHANGE){
-            state &= ~F_SMALL_CHANGE;
-            state |= F_CHANGED;
-        }
-
         if (state & F_CHANGED){
             state &= ~F_CHANGED;
-
-            // update DDS frequency
-            //dds_f1(f);
-            int big = si570_set_f(f_staged);
-            if (big >= 0) {
-                si570_store(big);
-                state |= LCD_REDRAW;
-            }
+            state |= LCD_REDRAW;
         }
 
         if (state & LCD_REDRAW) {
@@ -117,10 +104,6 @@ int main(void)
                 f2str(f, buffer, 10);
                 if (strlen(buffer) < 10) lcd_put(' ');
                 lcd_write(buffer);
-
-                // print filter size
-                if (state & ST_CW) lcd_put(0x00);
-                else lcd_put(0x01);
 
                 lcd_put(' ');
 

@@ -26,18 +26,13 @@
    so we can use fixed point with one decimal */
 extern volatile freq_t f;
 extern volatile freq_t f_step;
-extern volatile freq_t f_staged;
 
 void radio_init(void);
-void radio_new_freq_ready(void);
 
 extern volatile char *error;
 extern volatile uint8_t error_id;
 void radio_set_error(char *eep_string, uint8_t id);
 
-
-void set_cw(void);
-void set_ssb(void);
 void freq_step(signed char dir);
 
 void step_up(void);

@@ -5,9 +5,9 @@ void spi_init(void)
     SPI_DDR |= _BV(SPI_SCK) | _BV(SPI_MOSI) | _BV(SPI_SS);
     SPI_PORT |= _BV(SPI_SS);
 
-    // Enable SPI, Master, set clock rate fck/4, CLK idle low, sample at H->L
-    SPCR = _BV(SPE) | _BV(MSTR) | _BV(CPHA);
-    // SPSR |= _BV(SPI2X);
+    // Enable SPI, Master, set clock rate fck/128, CLK idle low, sample at H->L
+    SPCR = _BV(SPE) | _BV(MSTR) | _BV(CPHA) | _BV(SPR1) | _BV(SPR0);
+    //SPSR |= _BV(SPI2X);
 }
 
 uint8_t spi_transfer(uint8_t data)
@@ -19,4 +19,14 @@ uint8_t spi_transfer(uint8_t data)
         ;
 
     return SPDR;
+}
+
+void spi_begin(void)
+{
+    SPI_PORT &= ~_BV(SPI_SS);
+}
+
+void spi_end(void)
+{
+    SPI_PORT |= _BV(SPI_SS);
 }
