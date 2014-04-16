@@ -8,7 +8,9 @@
 #include "radio.h"
 #include "tuner.h"
 
+#define SUBSTEP 4
 static volatile uint8_t rotary_old;
+static volatile int8_t substep = 0;
 volatile intf_mode_t interface_mode = INTF_FREQ;
 
 /* lookup table in a form of bitarray (index is the number of the bit,
@@ -30,8 +32,8 @@ void interface_init(void)
     ROTARY_PORT |= _BV(ROTARY_A) | _BV(ROTARY_B) | _BV(ROTARY_BUTTON);
 
     /* setup buttons */
-    BUTTON_DDR &= ~(_BV(BUTTON_1) | _BV(BUTTON_2) | _BV(BUTTON_3) | _BV(BUTTON_4)); //inputs
-    BUTTON_PORT |= _BV(BUTTON_1) | _BV(BUTTON_2) | _BV(BUTTON_3) | _BV(BUTTON_4); //pull ups
+    BUTTON_DDR &= ~(BUTTON_MASK); //inputs
+    BUTTON_PORT |= BUTTON_MASK; //pull ups
 
     /* morse key interface */
     KEY_DDR &= ~(_BV(KEY_A) | _BV(KEY_B));
@@ -60,19 +62,27 @@ ISR(PCINT3_vect){
     uint8_t r = ((ROTARY_PIN >> ROTARY_SHIFT) & 0b11) | rotary_old;
 
     if (ROTARY_LOOKUP_NEXT & _BV(r)) {
-        if (interface_mode == INTF_STEP) step_up();
-        else if (interface_mode == INTF_TUNER_C) tuner_up(BANK_COUT);
-        else if (interface_mode == INTF_TUNER_L) tuner_up(BANK_L);
-        else freq_step(F_DIR_UP); // increase freq
-        state |= LCD_REDRAW;
+        substep++;
+        if (substep>=SUBSTEP) {
+            if (interface_mode == INTF_STEP) step_up();
+            else if (interface_mode == INTF_TUNER_C) tuner_up(BANK_COUT);
+            else if (interface_mode == INTF_TUNER_L) tuner_up(BANK_L);
+            else freq_step(F_DIR_UP); // increase freq
+            state |= LCD_REDRAW;
+            substep -= SUBSTEP;
+        }
     }
 
     else if (ROTARY_LOOKUP_PREV & _BV(r)) {
-        if (interface_mode == INTF_STEP) step_down();
-        else if (interface_mode == INTF_TUNER_C) tuner_down(BANK_COUT);
-        else if (interface_mode == INTF_TUNER_L) tuner_down(BANK_L);
-        else freq_step(F_DIR_DOWN); // decrease freq
-        state |= LCD_REDRAW;
+        substep--;
+        if (substep<=-SUBSTEP) {
+            if (interface_mode == INTF_STEP) step_down();
+            else if (interface_mode == INTF_TUNER_C) tuner_down(BANK_COUT);
+            else if (interface_mode == INTF_TUNER_L) tuner_down(BANK_L);
+            else freq_step(F_DIR_DOWN); // decrease freq
+            state |= LCD_REDRAW;
+            substep += SUBSTEP;
+        }
     }
 
     /* debounce
@@ -92,6 +102,7 @@ ISR(PCINT2_vect){
             return;
         }
 
+        tuner_write();
         state |= LCD_REDRAW;
     }
 
@@ -109,10 +120,11 @@ ISR(PCINT2_vect){
         state |= LCD_REDRAW;
         interface_mode_set(INTF_STEP);
     }
-    
-    if (BUTTON_PIN & BUTTON_MASK == BUTTON_MASK) {
+
+    // no button pressed
+    if ((BUTTON_PIN & BUTTON_MASK) == BUTTON_MASK) {
+        state |= LCD_REDRAW;
         interface_mode_set(INTF_FREQ);
     }
 
 }
-

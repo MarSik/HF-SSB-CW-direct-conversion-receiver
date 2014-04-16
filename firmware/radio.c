@@ -25,6 +25,8 @@ void freq_step(signed char dir)
 
     if ((f_staged < F_MIN) || (f_staged>(0xffffffff - F_MAX))) f_staged = F_MIN;
     else if (f_staged>F_MAX) f_staged = F_MAX;
+
+    f = f_staged;
 }
 
 void step_up()
@@ -42,6 +44,6 @@ void step_down()
 
 void radio_init(void)
 {
-    f = 0;
+    f = MHZ_f(7);
     f_step = KHZ_f(0, 1);
 }

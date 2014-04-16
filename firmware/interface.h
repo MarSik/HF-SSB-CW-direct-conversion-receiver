@@ -19,7 +19,7 @@
 #define BUTTON_2 4
 #define BUTTON_3 5
 #define BUTTON_4 6
-#define BUTTON_MASK 0b01111000
+#define BUTTON_MASK (_BV(BUTTON_1) | _BV(BUTTON_2) | _BV(BUTTON_3) | _BV(BUTTON_4))
 
 #define KEY_PORT PORTD
 #define KEY_PIN PIND

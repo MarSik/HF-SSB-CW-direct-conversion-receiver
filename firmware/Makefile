@@ -6,7 +6,7 @@ HFUSE = 0xDA
 EFUSE = 0xFD
 
 # Application files and targets
-TARGET = tuner
+TARGET = tunerfw
 
 # Place -I options here
 CINCS =

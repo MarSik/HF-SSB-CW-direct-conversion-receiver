@@ -139,25 +139,30 @@ int main(void)
             else if (f>0) {
                 fl = bandplan(f_sf(f), &extra);
 
-                if (fl & CW) {
-                    lcd_eep_write(s_cw);
-                    lcd_put(' ');
+                uint16_t v = tuner_get_real_l();
+                uint8_t r = 0;
+                while(v > 1000) {
+                    v /= 1000;
+                    r++;
                 }
 
-                if (fl & SSB) {
-                    lcd_eep_write(s_ssb);
-                    lcd_put(' ');
+                utoa(v, buffer, 10);
+                for(i=4; i>strlen(buffer); i--) lcd_put(' ');
+                lcd_write(buffer);
+                lcd_put(PICO[r+1]);
+
+                v = tuner_get_real_cout();
+                r = 0;
+                while(v > 1000) {
+                    v /= 1000;
+                    r++;
                 }
 
-                if (fl & DIGI) {
-                    lcd_eep_write(s_digi);
-                    lcd_put(' ');
-                }
 
-                if (TXOK(fl)) lcd_put(0x2);
-
-                if (extra) lcd_eep_write(extra);
-                else lcd_write("        ");
+                utoa(v, buffer, 10);
+                for(i=4; i>strlen(buffer); i--) lcd_put(' ');
+                lcd_write(buffer);
+                lcd_put(PICO[r]);
             }
         }
 
