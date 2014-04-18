@@ -33,9 +33,9 @@ int main(void)
 
     lcd_init();
 
-    lcd_eep_write(s_title);
+    lcd_pgm_write(s_title);
     lcd_line(1);
-    lcd_eep_write(s_author);
+    lcd_pgm_write(s_author);
     _delay_ms(1000);
 
     ir_init();
@@ -84,7 +84,7 @@ int main(void)
                 lcd_clear();
                 lcd_line(0);
                 utoa(ird, buffer, 16);
-                lcd_eep_write(s_ircode);
+                lcd_pgm_write(s_ircode);
                 lcd_write((unsigned char*)buffer);
             }
         }
@@ -126,13 +126,13 @@ int main(void)
                 }
 
             }
-            else lcd_eep_write(s_initializing);
+            else lcd_pgm_write(s_initializing);
 
             lcd_line(1);
             lcd_mode(LCD_DATA);
 
             if (error) {
-                    lcd_eep_write(error);
+                    lcd_pgm_write(error);
                     utoa(error_id, buffer, 16);
                     lcd_write(buffer);
             }

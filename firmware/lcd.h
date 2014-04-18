@@ -3,7 +3,7 @@
 
 /*
  * LCD configuration
- * 
+ *
  * all data & control lines have to be connected to
  * one port (PORTX) on the mcu
  */
@@ -51,6 +51,9 @@ void lcd_write(const uint8_t* str);
 
 /* send DATA string from EEPROM to LCD */
 void lcd_eep_write(const uint8_t* str);
+
+/* send DATA string from PROGMEM to LCD */
+void lcd_pgm_write(const uint8_t* str);
 
 /* prepare lcd for receiving a new character
    id must be 0 to 7

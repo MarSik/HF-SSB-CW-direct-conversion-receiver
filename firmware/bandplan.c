@@ -1,5 +1,5 @@
 #include <stdint.h>
-#include <avr/eeprom.h>
+#include <avr/pgmspace.h>
 #include "bandplan.h"
 #include "lang.h"
 #include "freq.h"
@@ -16,7 +16,7 @@ enum {
     EX_IMAGE,
 };
 
-const uint8_t* bandplan_extra[] EEMEM = {
+const uint8_t* const bandplan_extra[] PROGMEM = {
     [EX_SAQ] = s_saq,
     [EX_DCF77] = s_dcf77,
     [EX_EMERGENCY] = s_emergency,
@@ -32,7 +32,7 @@ const uint8_t* bandplan_extra[] EEMEM = {
 */
 
 
-uint16_t bandplan_table[BANDPLAN_LEN * BANDPLAN_ENTRY_LEN] EEMEM = {
+const uint16_t bandplan_table[BANDPLAN_LEN * BANDPLAN_ENTRY_LEN] PROGMEM = {
     BAND(12, 12, 0, EX_SAQ),
     BAND(77, 77, 0, EX_DCF77),
 
@@ -93,16 +93,16 @@ uint8_t bandplan(sfreq_t f, const uint8_t** desc)
 
     do {
         uint8_t idx = (idxa + idxb) / 2;
-        uint16_t fr = eeprom_read_word(bandplan_table + BANDPLAN_ENTRY_LEN * idx);
-        uint16_t to = eeprom_read_word(bandplan_table + BANDPLAN_ENTRY_LEN * idx + 1);
+        uint16_t fr = pgm_read_word(bandplan_table + BANDPLAN_ENTRY_LEN * idx);
+        uint16_t to = pgm_read_word(bandplan_table + BANDPLAN_ENTRY_LEN * idx + 1);
 
         /* we found the band! */
         if (fr <= f && to >= f) {
-            uint16_t ex = eeprom_read_word(bandplan_table + BANDPLAN_ENTRY_LEN * idx + 2);
+            uint16_t ex = pgm_read_word(bandplan_table + BANDPLAN_ENTRY_LEN * idx + 2);
             uint8_t f = ex >> 8;
 
             ex &= 0xff;
-            if (ex) *desc = (uint8_t*)eeprom_read_word((uint16_t*)bandplan_extra + ex);
+            if (ex) *desc = (uint8_t*)pgm_read_word((uint16_t*)bandplan_extra + ex);
             else *desc = NULL;
 
             return f;

@@ -2,11 +2,12 @@
 #include <string.h>
 #include <util/delay.h>
 #include <avr/eeprom.h>
+#include <avr/pgmspace.h>
 #include "lcd.h"
 
-static const uint8_t lcd_c_cw[] EEMEM = {0x1f, 0x1f, 0xe, 0x6, 0xa, 0xc, 0xe, 0x1f, 0};
-static const uint8_t lcd_c_ssb[] EEMEM = {0x1f, 0x1f, 0xe, 0xa, 0xa, 0xa, 0x15, 0x1f, 0};
-static const uint8_t lcd_c_tx[] EEMEM = {0x1f, 0x15, 0x1b, 0x15, 0x1b, 0x1b, 0x11, 0x1f, 0};
+static const uint8_t lcd_c_cw[] PROGMEM = {0x1f, 0x1f, 0xe, 0x6, 0xa, 0xc, 0xe, 0x1f, 0};
+static const uint8_t lcd_c_ssb[] PROGMEM = {0x1f, 0x1f, 0xe, 0xa, 0xa, 0xa, 0x15, 0x1f, 0};
+static const uint8_t lcd_c_tx[] PROGMEM = {0x1f, 0x15, 0x1b, 0x15, 0x1b, 0x1b, 0x11, 0x1f, 0};
 
 void lcd_put(uint8_t data)
 {
@@ -92,13 +93,13 @@ void lcd_init(void)
     */
 
     lcd_newchar(0);
-    lcd_eep_write(lcd_c_cw);
+    lcd_pgm_write(lcd_c_cw);
 
     lcd_newchar(1);
-    lcd_eep_write(lcd_c_ssb);
+    lcd_pgm_write(lcd_c_ssb);
 
     lcd_newchar(2);
-    lcd_eep_write(lcd_c_tx);
+    lcd_pgm_write(lcd_c_tx);
 
     lcd_line(0);
     lcd_mode(LCD_DATA);
@@ -132,10 +133,25 @@ void lcd_write(const uint8_t* str)
 void lcd_eep_write(const uint8_t* str)
 {
     uint8_t c;
-    
+
     lcd_mode(LCD_DATA);
     while(1) {
         c = eeprom_read_byte(str);
+        if(c==0) return;
+
+        lcd_put(c);
+        _delay_us(50);
+        str++;
+    }
+}
+
+void lcd_pgm_write(const uint8_t* str)
+{
+    uint8_t c;
+
+    lcd_mode(LCD_DATA);
+    while(1) {
+        c = pgm_read_byte(str);
         if(c==0) return;
 
         lcd_put(c);
