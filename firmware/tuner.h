@@ -5,14 +5,14 @@
 #include "spi.h"
 
 void tuner_write(void);
-void tuner_init(uint8_t ctrl);
+void tuner_init(void);
 
 void tuner_up(uint8_t bank);
 void tuner_down(uint8_t bank);
 
-#define BANK1_INVERT 0x1
-#define BANK2_INVERT 0x2
-#define BANK3_INVERT 0x4
+#define BANK1_INVERT 0
+#define BANK2_INVERT 0
+#define BANK3_INVERT 1
 
 #define BANK_CIN 0
 #define BANK_L 1

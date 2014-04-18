@@ -46,7 +46,7 @@ int main(void)
     sei();
 
     //si570_init();
-    tuner_init(BANK2_INVERT);
+    tuner_init();
     //dds_init();
 
     state |= LCD_REDRAW;
@@ -150,6 +150,7 @@ int main(void)
                 for(i=4; i>strlen(buffer); i--) lcd_put(' ');
                 lcd_write(buffer);
                 lcd_put(PICO[r+1]);
+                lcd_put('H');
 
                 v = tuner_get_real_cout();
                 r = 0;
@@ -163,6 +164,7 @@ int main(void)
                 for(i=4; i>strlen(buffer); i--) lcd_put(' ');
                 lcd_write(buffer);
                 lcd_put(PICO[r]);
+                lcd_put('F');
             }
         }
 
