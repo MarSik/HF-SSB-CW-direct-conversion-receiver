@@ -36,7 +36,7 @@ int main(void)
     tuner_init();
     //dds_init();
 
-    state |= LCD_REDRAW;
+    state |= LCD_REDRAW | F_CHANGED;
     lcd_init();
     lcd_clear();
 
@@ -83,12 +83,17 @@ int main(void)
 
             tuning_record record;
             if (tuner_find(f, &record)) {
+                state |= _BV(TUNER_MEM);
                 tuner_set_from_record(&record);
+            }
+            else {
+                state &= ~_BV(TUNER_MEM);
             }
         }
 
         if (state & LCD_CLEAR) {
             state &= ~LCD_CLEAR;
+            state |= LCD_REDRAW;
             lcd_clear();
         }
 

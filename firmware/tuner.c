@@ -150,7 +150,10 @@ void tuner_record(tuning_record* record, freq_t freq)
     record->freq = sf_rec(f_sf(freq));
 }
 
-uint8_t* tuner_find_slot(sfreq_t freq, sfreq_t* freqslot) {
+const uint8_t SKIP_REMOVED=1;
+const uint8_t RETURN_REMOVED=0;
+
+uint8_t* tuner_find_slot(sfreq_t freq, sfreq_t* freqslot, uint8_t skip_removed) {
     // Use open hash addressing
     // That is start at the hash of freq
     // and find the first slot with 0
@@ -162,8 +165,10 @@ uint8_t* tuner_find_slot(sfreq_t freq, sfreq_t* freqslot) {
     do {
         idx = tuner_records + i;
         // check if slot matches or empty (freq == 0x00)
+        // return deleted slot (Oxffff) only if skip_removed is 0
         *freqslot = sf_rec(eeprom_read_word((uint16_t*)idx));
-        if (*freqslot == sf_rec(freq) || *freqslot == 0x00) break;
+        if (*freqslot == sf_rec(freq) || *freqslot == 0x0000
+            || (!skip_removed && *freqslot == 0xffff)) break;
         ++i;
     } while(i != sf_hash(freq));
 
@@ -173,7 +178,7 @@ uint8_t* tuner_find_slot(sfreq_t freq, sfreq_t* freqslot) {
 void tuner_store(tuning_record* record)
 {
     sfreq_t slot;
-    uint8_t *addr = tuner_find_slot(record->freq, &slot);
+    uint8_t *addr = tuner_find_slot(record->freq, &slot, RETURN_REMOVED);
     if (slot == 0x0000 || slot == 0xffff) eeprom_write_word(addr, record->freq);
     else if (slot != record->freq) {
         /* XXX the memory is full! */
@@ -189,7 +194,7 @@ void tuner_store(tuning_record* record)
 uint8_t tuner_find(freq_t freq, tuning_record* record)
 {
     sfreq_t slot;
-    uint8_t *addr = tuner_find_slot(f_sf(freq), &slot);
+    uint8_t *addr = tuner_find_slot(f_sf(freq), &slot, SKIP_REMOVED);
     if (slot == sf_rec(f_sf(freq))) {
         record->freq = slot;
         record->cin = eeprom_read_byte(addr+2);

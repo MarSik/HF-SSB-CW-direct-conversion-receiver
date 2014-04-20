@@ -194,6 +194,8 @@ void renderer_freq(void)
             lcd_write(buffer);
         }
 
+        if (state & _BV(TUNER_MEM)) lcd_put(0);
+        else lcd_put(' ');
     }
     else lcd_pgm_write(s_initializing);
 }
