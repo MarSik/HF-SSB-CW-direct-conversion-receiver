@@ -31,4 +31,7 @@ void inline interface_mode_set(intf_mode_t m) {
     interface_mode = m;
 }
 
+extern uint8_t buffer[];
+void interface_render(void);
+
 #endif

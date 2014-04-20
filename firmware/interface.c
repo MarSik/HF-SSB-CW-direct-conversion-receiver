@@ -3,15 +3,21 @@
 #include <util/delay.h>
 #include <avr/io.h>
 #include <avr/sleep.h>
+#include <string.h>
 #include "interface.h"
 #include "state.h"
 #include "radio.h"
 #include "tuner.h"
+#include "lang.h"
+#include "lcd.h"
+#include "freq.h"
 
 #define SUBSTEP 4
 static volatile uint8_t rotary_old;
 static volatile int8_t substep = 0;
 volatile intf_mode_t interface_mode = INTF_FREQ;
+
+uint8_t buffer[9];
 
 /* lookup table in a form of bitarray (index is the number of the bit,
    counted from 0 LSB)
@@ -20,6 +26,19 @@ volatile intf_mode_t interface_mode = INTF_FREQ;
 */
 #define ROTARY_LOOKUP_PREV 0b0100000110000010
 #define ROTARY_LOOKUP_NEXT 0b0010100000010100
+
+void renderer_default(void);
+void renderer_set_l(void);
+void renderer_set_c(void);
+
+typedef void (*renderer_func)(void);
+
+static renderer_func renderer[] = {
+    [INTF_FREQ] = renderer_default,
+    [INTF_STEP] = renderer_default,
+    [INTF_TUNER_L] = renderer_set_l,
+    [INTF_TUNER_C] = renderer_set_c
+};
 
 inline void debounce(void)
 {
@@ -113,27 +132,183 @@ ISR(PCINT2_vect){
     }
 
     if ((BUTTON_PIN & _BV(BUTTON_2)) == 0) {
-        state |= LCD_REDRAW;
+        state |= LCD_REDRAW | LCD_CLEAR;
         interface_mode_set(INTF_TUNER_C);
         led_on(LEDB);
     }
 
     if ((BUTTON_PIN & _BV(BUTTON_3)) == 0) {
-        state |= LCD_REDRAW;
+        state |= LCD_REDRAW | LCD_CLEAR;
         interface_mode_set(INTF_TUNER_L);
         led_on(LEDB);
     }
 
     if ((BUTTON_PIN & _BV(BUTTON_4)) == 0) {
-        state |= LCD_REDRAW;
+        state |= LCD_REDRAW | LCD_CLEAR;
         interface_mode_set(INTF_STEP);
         led_on(LEDB);
     }
 
     // no button pressed
     if ((BUTTON_PIN & BUTTON_MASK) == BUTTON_MASK) {
-        state |= LCD_REDRAW;
+        state |= LCD_REDRAW | LCD_CLEAR;
         interface_mode_set(INTF_FREQ);
         led_off(LEDB);
     }
+}
+
+void interface_render(void)
+{
+    renderer[interface_mode]();
+}
+
+void renderer_freq(void)
+{
+    lcd_line(0);
+    lcd_mode(LCD_DATA);
+
+    // print Mhz
+    if (f > 0) {
+        f2str(f, buffer, 10);
+        if (strlen(buffer) < 10) lcd_put(' ');
+        lcd_write(buffer);
+
+        lcd_put(' ');
+
+        if (f_MHZ(f_step)) {
+            utoa(f_MHZ(f_step), buffer, 10);
+            for(uint8_t i=3; i>strlen(buffer); i--) lcd_put(' ');
+            lcd_write(buffer);
+            lcd_put('M');
+        }
+        else if (f_KHZ(f_step)) {
+            utoa(f_KHZ(f_step), buffer, 10);
+            for(uint8_t i=3; i>strlen(buffer); i--) lcd_put(' ');
+            lcd_write(buffer);
+            lcd_put('k');
+        }
+        else {
+            utoa(f_HZ(f_step), buffer, 10);
+            for(uint8_t i=4; i>strlen(buffer); i--) lcd_put(' ');
+            lcd_write(buffer);
+        }
+
+    }
+    else lcd_pgm_write(s_initializing);
+}
+
+void renderer_default(void)
+{
+    const uint8_t *extra = NULL;
+
+    renderer_freq();
+
+    lcd_line(1);
+    lcd_mode(LCD_DATA);
+
+    if (error) {
+        lcd_pgm_write(error);
+        utoa(error_id, buffer, 16);
+        lcd_write(buffer);
+    }
+    else if (f>0) {
+        uint8_t fl = bandplan(f_sf(f), &extra);
+
+        uint16_t v;
+        uint8_t r;
+
+        /*
+        v = tuner_get_real_cin();
+        r = 0;
+        while(v > 1000) {
+            v /= 1000;
+            r++;
+        }
+
+        utoa(v, buffer, 10);
+        for(uint8_t i=4; i>strlen(buffer); i--) lcd_put(' ');
+        lcd_write(buffer);
+        lcd_put(PICO[r]);
+        lcd_put('F');
+        */
+
+        v = tuner_get_real_l();
+        r = 0;
+        while(v > 1000) {
+            v /= 1000;
+            r++;
+        }
+
+        utoa(v, buffer, 10);
+        for(uint8_t i=4; i>strlen(buffer); i--) lcd_put(' ');
+        lcd_write(buffer);
+        lcd_put(PICO[r+1]);
+        lcd_put('H');
+
+        v = tuner_get_real_cout();
+        r = 0;
+        while(v > 1000) {
+            v /= 1000;
+            r++;
+        }
+
+        utoa(v, buffer, 10);
+        for(uint8_t i=4; i>strlen(buffer); i--) lcd_put(' ');
+        lcd_write(buffer);
+        lcd_put(PICO[r]);
+        lcd_put('F');
+    }
+}
+
+void renderer_set_c(void)
+{
+    renderer_freq();
+
+    lcd_line(1);
+    lcd_mode(LCD_DATA);
+
+    uint8_t r;
+    uint16_t v;
+
+    r = tuner_get_cout();
+
+    utoa(r, buffer, 10);
+    for(uint8_t i=4; i>strlen(buffer); i--) lcd_put(' ');
+    lcd_write(buffer);
+
+    v = tuner_get_real_cout();
+    r = 0;
+    while(v > 1000) {
+        v /= 1000;
+        r++;
+    }
+
+    utoa(v, buffer, 10);
+    for(uint8_t i=7; i>strlen(buffer); i--) lcd_put(' ');
+    lcd_write(buffer);
+    lcd_put(PICO[r]);
+    lcd_put('F');
+}
+
+void renderer_set_l(void)
+{
+    renderer_freq();
+
+    lcd_line(1);
+    lcd_mode(LCD_DATA);
+
+    uint8_t r;
+    uint16_t v;
+
+    r = tuner_get_l();
+    utoa(r, buffer, 10);
+    for(uint8_t i=4; i>strlen(buffer); i--) lcd_put(' ');
+    lcd_write(buffer);
+
+    v = tuner_get_real_l();
+    utoa(v, buffer, 10);
+    for(uint8_t i=7; i>strlen(buffer); i--) lcd_put(' ');
+    lcd_write(buffer);
+    lcd_put(PICO[1]);
+    lcd_put('H');
 }

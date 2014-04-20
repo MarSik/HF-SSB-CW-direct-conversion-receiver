@@ -5,7 +5,6 @@
 #include <avr/eeprom.h>
 #include <math.h>
 #include <stdlib.h>
-#include <string.h>
 #include "lang.h"
 #include "lcd.h"
 #include "bandplan.h"
@@ -20,11 +19,6 @@
 
 int main(void)
 {
-    uint8_t buffer[9];
-    uint8_t i;
-    uint8_t fl = 0;
-    const uint8_t *extra = NULL;
-
     cli();
 
     /* disable ADC */
@@ -88,80 +82,14 @@ int main(void)
             state |= LCD_REDRAW;
         }
 
+        if (state & LCD_CLEAR) {
+            state &= ~LCD_CLEAR;
+            lcd_clear();
+        }
+
         if (state & LCD_REDRAW) {
             state &= ~LCD_REDRAW;
-            lcd_line(0);
-            lcd_mode(LCD_DATA);
-
-            // print Mhz
-            if (f > 0) {
-                f2str(f, buffer, 10);
-                if (strlen(buffer) < 10) lcd_put(' ');
-                lcd_write(buffer);
-
-                lcd_put(' ');
-
-                if (f_MHZ(f_step)) {
-                    utoa(f_MHZ(f_step), buffer, 10);
-                    for(i=3; i>strlen(buffer); i--) lcd_put(' ');
-                    lcd_write(buffer);
-                    lcd_put('M');
-                }
-                else if (f_KHZ(f_step)) {
-                    utoa(f_KHZ(f_step), buffer, 10);
-                    for(i=3; i>strlen(buffer); i--) lcd_put(' ');
-                    lcd_write(buffer);
-                    lcd_put('k');
-                }
-                else {
-                    utoa(f_HZ(f_step), buffer, 10);
-                    for(i=4; i>strlen(buffer); i--) lcd_put(' ');
-                    lcd_write(buffer);
-                }
-
-            }
-            else lcd_pgm_write(s_initializing);
-
-            lcd_line(1);
-            lcd_mode(LCD_DATA);
-
-            if (error) {
-                    lcd_pgm_write(error);
-                    utoa(error_id, buffer, 16);
-                    lcd_write(buffer);
-            }
-            else if (f>0) {
-                fl = bandplan(f_sf(f), &extra);
-
-                uint16_t v;
-                uint8_t r;
-
-                v = tuner_get_real_l();
-                r = 0;
-                while(v > 1000) {
-                    v /= 1000;
-                    r++;
-                }
-
-                utoa(v, buffer, 10);
-                for(i=4; i>strlen(buffer); i--) lcd_put(' ');
-                lcd_write(buffer);
-                lcd_put(PICO[r+1]);
-                lcd_put('H');
-
-                v = tuner_get_real_cout();
-                r = 0;
-                while(v > 1000) {
-                    v /= 1000;
-                    r++;
-                }
-
-                utoa(v, buffer, 10);
-                for(i=4; i>strlen(buffer); i--) lcd_put(' ');
-                lcd_write(buffer);
-                lcd_put(PICO[r]);
-                lcd_put('F');
-            }
+            interface_render();
         }
 
         /* sleep the cpu to minimize RF noise */
