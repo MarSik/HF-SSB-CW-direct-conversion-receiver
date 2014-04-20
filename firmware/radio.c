@@ -27,6 +27,7 @@ void freq_step(signed char dir)
     else if (f_staged>F_MAX) f_staged = F_MAX;
 
     f = f_staged;
+    state |= F_CHANGED;
 }
 
 void step_up()

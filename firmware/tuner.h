@@ -12,6 +12,8 @@ typedef struct {
     uint8_t cout;
 } tuning_record;
 
+void tuner_save(void);
+void tuner_set_from_record(tuning_record* record);
 void tuner_record(tuning_record* record, freq_t freq);
 void tuner_store(tuning_record* record);
 uint8_t tuner_find(freq_t freq, tuning_record* record);

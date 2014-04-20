@@ -80,6 +80,11 @@ int main(void)
         if (state & F_CHANGED){
             state &= ~F_CHANGED;
             state |= LCD_REDRAW;
+
+            tuning_record record;
+            if (tuner_find(f, &record)) {
+                tuner_set_from_record(&record);
+            }
         }
 
         if (state & LCD_CLEAR) {

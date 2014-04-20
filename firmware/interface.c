@@ -128,6 +128,7 @@ ISR(PCINT2_vect){
         }
 
         tuner_write();
+        tuner_save();
         state |= LCD_REDRAW;
     }
 
@@ -277,16 +278,11 @@ void renderer_set_c(void)
     lcd_write(buffer);
 
     v = tuner_get_real_cout();
-    r = 0;
-    while(v > 1000) {
-        v /= 1000;
-        r++;
-    }
 
     utoa(v, buffer, 10);
     for(uint8_t i=7; i>strlen(buffer); i--) lcd_put(' ');
     lcd_write(buffer);
-    lcd_put(PICO[r]);
+    lcd_put(PICO[0]);
     lcd_put('F');
 }
 
