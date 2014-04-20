@@ -3,8 +3,12 @@
 #include <stdint.h>
 #include <math.h>
 #include <stdlib.h>
+#include <avr/eeprom.h>
+#include "config.h"
 #include "spi.h"
 #include "tuner.h"
+#include "interface.h"
+#include "freq.h"
 
 volatile static uint8_t banks[3] = {0x00, 0x00, 0x00};
 
@@ -17,8 +21,12 @@ const static uint16_t cin_values[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 
 const char* PICO = "pnum kM";
 
+// Table for tuning records
+tuning_record *tuner_records[256] EEMEM;
+
 void tuner_write(void)
 {
+    led_on(LEDA);
     spi_begin();
     /* Driver is inverting signal so non-inverted means we have to
        send the inverted value. Inverted means we have to send the
@@ -27,6 +35,7 @@ void tuner_write(void)
     spi_transfer((BANK2_INVERT) ? banks[BANK2] : ~banks[BANK2]);
     spi_transfer((BANK1_INVERT) ? banks[BANK1] : ~banks[BANK1]);
     spi_end();
+    led_off(LEDA);
 }
 
 void tuner_up(uint8_t bank)
@@ -104,4 +113,72 @@ uint16_t tuner_get_real_cout(void)
 uint16_t tuner_get_real_cin(void)
 {
     return compute_bits(tuner_get_cin(), cin_values) / 10;
+}
+
+inline sfreq_t sf_rec(sfreq_t freq)
+{
+    return freq & 0xfff8;
+}
+
+inline uint8_t sf_hash(sfreq_t freq)
+{
+    // Compute hash id - strip low 3 bits and use
+    // the lowest 8 remaining bits as index
+    return (freq >> 3) & 0xff;
+}
+
+void tuner_record(tuning_record* record, freq_t freq)
+{
+    record->l = banks[BANK_L];
+    record->cin = banks[BANK_CIN];
+    record->cout = banks[BANK_COUT];
+    record->freq = sf_rec(f_sf(freq));
+}
+
+uint8_t* tuner_find_slot(sfreq_t freq, sfreq_t* freqslot) {
+    // Use open hash addressing
+    // That is start at the hash of freq
+    // and find the first slot with 0
+    // or the freq
+    // set the freq of selected slot to freqslot
+    // and return the eeprom address
+    uint16_t i = sf_hash(freq);
+    uint8_t *idx;
+    do {
+        idx = tuner_records + i;
+        // TODO check if slot matches or empty (freq == 0)
+        *freqslot = sf_rec(eeprom_read_word(idx));
+        if (*freqslot == freq || *freqslot == 0) break;
+        ++i;
+    } while(i != sf_hash(freq));
+
+    return idx;
+}
+
+void tuner_store(tuning_record* record)
+{
+    sfreq_t slot;
+    uint8_t *addr = tuner_find_slot(record->freq, &slot);
+    if (slot == 0) eeprom_write_word(addr, record->freq);
+    else if (slot != record->freq) {
+        /* XXX the memory is full! */
+    }
+
+    eeprom_write_byte(addr+2, record->cin);
+    eeprom_write_byte(addr+3, record->cout);
+    eeprom_write_byte(addr+4, record->l);
+}
+
+uint8_t tuner_find(freq_t freq, tuning_record* record)
+{
+    sfreq_t slot;
+    uint8_t *addr = tuner_find_slot(f_sf(freq), &slot);
+    if (slot == f_sf(freq)) {
+        record->freq = slot;
+        record->cin = eeprom_read_byte(addr+2);
+        record->cout = eeprom_read_byte(addr+3);
+        record->l = eeprom_read_byte(addr+4);
+        return 1;
+    }
+    return 0;
 }

@@ -20,10 +20,10 @@ typedef uint16_t sfreq_t;
 #define f_KHZ(f) ((f_full(f) % 1000000) / 1000)
 #define f_HZ(f) (f_full(f) % 1000)
 
-// short frequency is the number or kilohertz
+// short frequency is the number of kilohertz
 // and is supported only up to 32 Mhz
-#define f_sf(f) ((sfreq_t)((f) / (1000 << 1)))
-#define sf_f(f) ((freq_t)(f) * (1000 << 1))
+inline sfreq_t f_sf(freq_t f) { return ((sfreq_t)((f) / (1000 << 1))); }
+inline freq_t sf_f(sfreq_t f) { return ((freq_t)(f) * (1000 << 1)); }
 
 #define KHZ_sf(k) (k)
 

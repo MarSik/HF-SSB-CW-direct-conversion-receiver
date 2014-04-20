@@ -35,9 +35,15 @@ void interface_init(void)
     BUTTON_DDR &= ~(BUTTON_MASK); //inputs
     BUTTON_PORT |= BUTTON_MASK; //pull ups
 
+    /* setup LEDs */
+    LED_DDR |= _BV(LEDA) | _BV(LEDB);
+    LED_PORT |= _BV(LEDA) | _BV(LEDB);
+
+#ifdef KEY_ENABLE
     /* morse key interface */
     KEY_DDR &= ~(_BV(KEY_A) | _BV(KEY_B));
     KEY_PORT |= _BV(KEY_A) | _BV(KEY_B);
+#endif
 
     // save inital rotary state
     rotary_old = ((ROTARY_PIN >> ROTARY_SHIFT) & 0b11) << 2;
@@ -109,22 +115,25 @@ ISR(PCINT2_vect){
     if ((BUTTON_PIN & _BV(BUTTON_2)) == 0) {
         state |= LCD_REDRAW;
         interface_mode_set(INTF_TUNER_C);
+        led_on(LEDB);
     }
 
     if ((BUTTON_PIN & _BV(BUTTON_3)) == 0) {
         state |= LCD_REDRAW;
         interface_mode_set(INTF_TUNER_L);
+        led_on(LEDB);
     }
 
     if ((BUTTON_PIN & _BV(BUTTON_4)) == 0) {
         state |= LCD_REDRAW;
         interface_mode_set(INTF_STEP);
+        led_on(LEDB);
     }
 
     // no button pressed
     if ((BUTTON_PIN & BUTTON_MASK) == BUTTON_MASK) {
         state |= LCD_REDRAW;
         interface_mode_set(INTF_FREQ);
+        led_off(LEDB);
     }
-
 }

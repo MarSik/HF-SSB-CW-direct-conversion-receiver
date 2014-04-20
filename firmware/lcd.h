@@ -1,28 +1,7 @@
 #ifndef LCD_H_2012_0203_1436_MarSik_ASDFKJAS
 #define LCD_H_2012_0203_1436_MarSik_ASDFKJAS
 
-/*
- * LCD configuration
- *
- * all data & control lines have to be connected to
- * one port (PORTX) on the mcu
- */
-
-#define LCD PORTA
-#define LCD_PIN PINA
-#define LCD_DDR DDRA
-
-/* LCD data lines are connected to
- *        D4 -- PORTX0
- *        D5 -- PORTX1
- *        D6 -- PORTX2
- *        D7 -- PORTX3
- *
- * control lines are connected to Px (defined below)
- *  (RW is tied to GND)
- */
-#define RS 5
-#define EN 4
+#include <inttypes.h>
 
 /*
  * LCD constants

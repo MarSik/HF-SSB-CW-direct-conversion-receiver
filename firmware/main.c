@@ -31,13 +31,6 @@ int main(void)
     ACSR |= _BV(ACD);
     ADCSRA &= ~_BV(ADEN);
 
-    lcd_init();
-
-    lcd_pgm_write(s_title);
-    lcd_line(1);
-    lcd_pgm_write(s_author);
-    _delay_ms(1000);
-
     ir_init();
     interface_init();
     radio_init();
@@ -50,6 +43,7 @@ int main(void)
     //dds_init();
 
     state |= LCD_REDRAW;
+    lcd_init();
     lcd_clear();
 
     while(1) {
@@ -139,8 +133,11 @@ int main(void)
             else if (f>0) {
                 fl = bandplan(f_sf(f), &extra);
 
-                uint16_t v = tuner_get_real_l();
-                uint8_t r = 0;
+                uint16_t v;
+                uint8_t r;
+
+                v = tuner_get_real_l();
+                r = 0;
                 while(v > 1000) {
                     v /= 1000;
                     r++;
@@ -158,7 +155,6 @@ int main(void)
                     v /= 1000;
                     r++;
                 }
-
 
                 utoa(v, buffer, 10);
                 for(i=4; i>strlen(buffer); i--) lcd_put(' ');

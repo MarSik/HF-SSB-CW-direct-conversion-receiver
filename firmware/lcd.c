@@ -3,11 +3,15 @@
 #include <util/delay.h>
 #include <avr/eeprom.h>
 #include <avr/pgmspace.h>
+#include "config.h"
 #include "lcd.h"
 
 static const uint8_t lcd_c_cw[] PROGMEM = {0x1f, 0x1f, 0xe, 0x6, 0xa, 0xc, 0xe, 0x1f, 0};
 static const uint8_t lcd_c_ssb[] PROGMEM = {0x1f, 0x1f, 0xe, 0xa, 0xa, 0xa, 0x15, 0x1f, 0};
 static const uint8_t lcd_c_tx[] PROGMEM = {0x1f, 0x15, 0x1b, 0x15, 0x1b, 0x1b, 0x11, 0x1f, 0};
+
+static const uint8_t lcd_c_coil[] PROGMEM = {0x00, 0x00, 0x0a, 0x15, 0x15, 0x15, 0x00, 0x00, 0};
+static const uint8_t lcd_c_cap[] PROGMEM = {0x00, 0x04, 0x04, 0x1f, 0x00, 0x1f, 0x4, 0x4, 0};
 
 void lcd_put(uint8_t data)
 {
@@ -100,6 +104,12 @@ void lcd_init(void)
 
     lcd_newchar(2);
     lcd_pgm_write(lcd_c_tx);
+
+    lcd_newchar(3);
+    lcd_pgm_write(lcd_c_coil);
+
+    lcd_newchar(4);
+    lcd_pgm_write(lcd_c_cap);
 
     lcd_line(0);
     lcd_mode(LCD_DATA);

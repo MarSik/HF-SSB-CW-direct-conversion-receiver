@@ -74,6 +74,7 @@
 #include <avr/interrupt.h>
 #include <avr/wdt.h>
 #include <avr/boot.h>
+#include <util/delay.h>
 
 #ifdef ADABOOT
 #define NUM_LED_FLASHES 3
@@ -82,6 +83,12 @@
 #define NUL_LED_FLASHES 3
 #endif
 
+#ifndef uint8_t
+#define uint8_t unsigned char
+#endif
+
+static const uint8_t s_title[] PROGMEM = "Tuner (c) MarSik";
+static const uint8_t s_booting[] PROGMEM = "Booting...";
 
 /* 20070707: hacked by David A. Mellis - after this many errors give up and launch application */
 #define MAX_ERROR_COUNT 5
@@ -122,6 +129,51 @@
 
 #define PAGE_SIZE	  0x080U        //128 words
 #define PAGE_SIZE_BYTES   (PAGE_SIZE*2) //256 bytes
+
+/*
+ * LCD configuration
+ *
+ * all data & control lines have to be connected to
+ * one port (PORTX) on the mcu
+ */
+
+#define LCD PORTA
+#define LCD_PIN PINA
+#define LCD_DDR DDRA
+
+/* LCD data lines are connected to
+ *        D4 -- PORTX0
+ *        D5 -- PORTX1
+ *        D6 -- PORTX2
+ *        D7 -- PORTX3
+ *
+ * control lines are connected to Px (defined below)
+ *  (RW is tied to GND)
+ */
+#define RS 5
+#define EN 4
+
+/*
+ * LCD constants
+ */
+#define LCD_COMMAND 0
+#define LCD_DATA 1
+
+/* send one character/command byte to LCD */
+void lcd_put(uint8_t data);
+
+/* change current mode to LCD_COMMAND or LCD_DATA */
+void lcd_mode(uint8_t mode);
+
+/* reinitialize LCD */
+void lcd_init(void);
+
+/* move cursor to beginning of <line>. line
+   numbering starts at 0 */
+void lcd_line(uint8_t line);
+
+/* send DATA string from PROGMEM to LCD */
+void lcd_pgm_write(const uint8_t* str);
 
 /* function prototypes */
 void putch(char);
@@ -165,7 +217,7 @@ int main(void)
     uint8_t ch,ch2;
     uint16_t w;
     uint16_t i;
-	
+
     asm volatile("nop\n\t");
 
 #ifdef ADABOOT		// BBR/LF 10/8/2007 & 9/13/2008
@@ -196,16 +248,11 @@ int main(void)
     /* set LED pin as output */
     LED_DDR |= _BV(LED);
 
-    /* flash onboard LED to signal entering of bootloader                   */
-    /* ADABOOT will do two series of flashes. first 4 - signifying ADABOOT  */
-    /* then a pause and another flash series signifying ADABOOT sub-version */
-
-
-    flash_led(NUM_LED_FLASHES);
-
-#ifdef	ADABOOT
-    flash_led(ADABOOT_VER);		// BBR 9/13/2008
-#endif 
+    /* initialize LCD */
+    lcd_init();
+    lcd_pgm_write(s_title);
+    lcd_line(1);
+    lcd_pgm_write(s_booting);
 
     /* forever loop */
     for (;;)
@@ -215,7 +262,7 @@ int main(void)
 
             /* A bunch of if...else if... gives smaller code than switch...case ! */
 
-            /* Hello is anyone home ? */ 
+            /* Hello is anyone home ? */
             if(ch=='0')
                 nothing_response();
 
@@ -299,11 +346,11 @@ int main(void)
             else if(ch=='Q')
 		{
 		    nothing_response();
-#ifdef ADABOOT		
+#ifdef ADABOOT
                     // autoreset via watchdog (sneaky!) BBR/LF 9/13/2008
                     WDTCSR = _BV(WDE);
                     while (1); // 16 ms
-#endif		
+#endif
 		}
 
 
@@ -341,10 +388,10 @@ int main(void)
                     if (ch == 0) {
                         byte_response(SIG1);
                     } else if (ch == 1) {
-                        byte_response(SIG2); 
+                        byte_response(SIG2);
                     } else {
                         byte_response(SIG3);
-                    } 
+                    }
 		} else {
                     getNch(3);
                     byte_response(0x00);
@@ -357,17 +404,17 @@ int main(void)
                     if (getch() == ' ') {
 
                         buff[0] = getch();
-                        
+
                         // wait till previous write is finished
                         while(EECR & _BV(EEPE));
-                        
+
                         EEAR = (uint16_t)(void *)address.word;
                         EEDR = buff[0];
                         EECR |= _BV(EEMPE);
                         EECR |= _BV(EEPE);
-                        
+
                         address.word++;
-                        
+
                         putch(0x14);
                         putch(0x10);
                     }
@@ -385,14 +432,14 @@ int main(void)
 
                         // wait till previous write is finished
                         while(EECR & _BV(EEPE));
-                        
+
                         EEAR = (uint16_t)(void *)address.word;
                         EEDR = buff[0];
                         EECR |= _BV(EEMPE);
                         EECR |= _BV(EERE);
-                       
+
                         address.word++;
-                        
+
                         putch(0x14);
                         putch(EEDR);
                         putch(0x10);
@@ -409,8 +456,8 @@ int main(void)
 		{
 		    length.byte[1] = getch();
 		    length.byte[0] = getch();
-	
-                    address.word <<= 1;	//address * 2 -> byte location                                    
+
+                    address.word <<= 1;	//address * 2 -> byte location
 
 		    flags.eeprom = 0;
 		    if (getch() == 'E') {
@@ -419,40 +466,40 @@ int main(void)
 
                     for (i=0; i<PAGE_SIZE_BYTES; i++)
                         buff[i] = 0;
-		
+
 		    for (w = 0; w < length.word; w++)
 			{
                             // Store data in buffer, can't keep up with serial data stream whilst programming pages
                             buff[w] = getch();
                         }
-	
+
 		    if (getch() == ' ')
 			{
                             if (flags.eeprom)
-				{	
+				{
 
                                     //Write to EEPROM one byte at a time
 				    for(w=0;w<length.word;w++)
 					{
                                             while(EECR & _BV(EEPE));
-					
+
                                             EEAR = (uint16_t)(void *)address.word;
                                             EEDR = buff[w];
                                             EECR |= _BV(EEMPE);
                                             EECR |= _BV(EEPE);
 
                                             address.word++;
-                                        }			
+                                        }
 				}
                             else
 				{
                                     //Even up an odd number of bytes
                                     if ((length.byte[0] & 0x01))
                                         length.word++;
-				
+
 				    //Wait for previous EEPROM writes to complete
                                     while(EECR & _BV(EEPE));
-				
+
 				    asm volatile(
 						 "clr	r17		\n\t"	//page_word_count
 						 "lds	r30,address	\n\t"	//Address of FLASH location (in bytes)
@@ -461,9 +508,9 @@ int main(void)
 						 "ldi	r29,hi8(buff)	\n\t"
 						 "lds	r24,length	\n\t"	//Length of data to be written (in bytes)
 						 "lds	r25,length+1	\n\t"
-						 "length_loop:		\n\t"	//Main loop, repeat for number of words in block							 							 
+						 "length_loop:		\n\t"	//Main loop, repeat for number of words in block
 						 "cpi	r17,0x00	\n\t"	//If page_word_count=0 then erase page
-						 "brne	no_page_erase	\n\t"						 
+						 "brne	no_page_erase	\n\t"
 						 "wait_spm1:		\n\t"
 						 "lds	r16,%0		\n\t"	//Wait for previous spm to complete
 						 "andi	r16,1           \n\t"
@@ -471,20 +518,20 @@ int main(void)
 						 "breq	wait_spm1       \n\t"
 						 "ldi	r16,0x03	\n\t"	//Erase page pointed to by Z
 						 "sts	%0,r16		\n\t"
-						 "spm			\n\t"							 
+						 "spm			\n\t"
 						 "wait_spm2:		\n\t"
 						 "lds	r16,%0		\n\t"	//Wait for previous spm to complete
 						 "andi	r16,1           \n\t"
 						 "cpi	r16,1           \n\t"
-						 "breq	wait_spm2       \n\t"									 
+						 "breq	wait_spm2       \n\t"
 
 						 "ldi	r16,0x11	\n\t"	//Re-enable RWW section
-						 "sts	%0,r16		\n\t"						 			 
+						 "sts	%0,r16		\n\t"
 						 "spm			\n\t"
-						 "no_page_erase:		\n\t"							 
+						 "no_page_erase:		\n\t"
 						 "ld	r0,Y+		\n\t"	//Write 2 bytes into page buffer
-						 "ld	r1,Y+		\n\t"							 
-							 
+						 "ld	r1,Y+		\n\t"
+
 						 "wait_spm3:		\n\t"
 						 "lds	r16,%0		\n\t"	//Wait for previous spm to complete
 						 "andi	r16,1           \n\t"
@@ -493,7 +540,7 @@ int main(void)
 						 "ldi	r16,0x01	\n\t"	//Load r0,r1 into FLASH page buffer
 						 "sts	%0,r16		\n\t"
 						 "spm			\n\t"
-							 
+
 						 "inc	r17		\n\t"	//page_word_count++
 						 "cpi r17,%1	        \n\t"
 						 "brlo	same_page	\n\t"	//Still same page in FLASH
@@ -503,7 +550,7 @@ int main(void)
 						 "lds	r16,%0		\n\t"	//Wait for previous spm to complete
 						 "andi	r16,1           \n\t"
 						 "cpi	r16,1           \n\t"
-						 "breq	wait_spm4       \n\t"						 							 
+						 "breq	wait_spm4       \n\t"
 						 "ldi	r16,0x05	\n\t"	//Write page pointed to by Z
 						 "sts	%0,r16		\n\t"
 						 "spm			\n\t"
@@ -511,11 +558,11 @@ int main(void)
 						 "lds	r16,%0		\n\t"	//Wait for previous spm to complete
 						 "andi	r16,1           \n\t"
 						 "cpi	r16,1           \n\t"
-						 "breq	wait_spm5       \n\t"									 
+						 "breq	wait_spm5       \n\t"
 						 "ldi	r16,0x11	\n\t"	//Re-enable RWW section
-						 "sts	%0,r16		\n\t"						 			 
-						 "spm			\n\t"					 		 
-						 "same_page:		\n\t"							 
+						 "sts	%0,r16		\n\t"
+						 "spm			\n\t"
+						 "same_page:		\n\t"
 						 "adiw	r30,2		\n\t"	//Next word in FLASH
 						 "sbiw	r24,2		\n\t"	//length-2
 						 "breq	final_write	\n\t"	//Finished
@@ -538,9 +585,9 @@ int main(void)
 			{
                             if (++error_count == MAX_ERROR_COUNT)
                                 app_start();
-                        }		
+                        }
 		}
-    
+
             /* Read memory block mode, length is big endian.  */
             else if(ch=='t')
 		{
@@ -561,7 +608,7 @@ int main(void)
                             for (w=0; w<length.word; w++)
 				{
                                     // Can handle odd and even lengths okay
-				    if (flags.eeprom) 
+				    if (flags.eeprom)
 					{
                                             // Byte access EEPROM read
                                             while(EECR & _BV(EEPE));
@@ -623,7 +670,7 @@ char gethex(void)
     putch(ah);
     al = getch();
     putch(al);
-    
+
     if(ah >= 'a')
         ah = ah - 'a' + 0x0a;
     else if(ah >= '0')
@@ -677,7 +724,7 @@ char getch(void)
 
     while(!(UCSR0A & _BV(RXC0)))
 	{
-            /* 20060803 DojoCorp:: Addon coming from the previous Bootloader*/               
+            /* 20060803 DojoCorp:: Addon coming from the previous Bootloader*/
             /* HACKME:: here is a good place to count times*/
             count++;
             if (count > MAX_TIME_COUNT)
@@ -740,24 +787,24 @@ void flash_led(uint8_t count)
     /* flash onboard LED count times to signal entering of bootloader */
     /* l needs to be volatile or the delay loops below might get      */
     /* optimized away if compiling with optimizations (DAM).          */
-	
+
     volatile uint32_t l;
 
     if (count == 0) {
         count = ADABOOT;
     }
-    
+
 
     int8_t i;
     for (i = 0; i < count; ++i) {
-        LED_PORT |= _BV(LED);					// LED on
+        LED_PORT &= ~_BV(LED);					// LED on (log 0)
         for(l = 0; l < (F_CPU / 1000); ++l);		// delay NGvalue was 1000 for both loops - BBR
-        LED_PORT &= ~_BV(LED);					// LED off
-        for(l = 0; l < (F_CPU / 250); ++l);		// delay asymmteric for ADA BOOT BBR 
+        LED_PORT |= _BV(LED);					// LED off
+        for(l = 0; l < (F_CPU / 250); ++l);		// delay asymmteric for ADA BOOT BBR
     }
 
-    for(l = 0; l < (F_CPU / 100); ++l);		    // pause ADA BOOT BBR 
-		
+    for(l = 0; l < (F_CPU / 100); ++l);		    // pause ADA BOOT BBR
+
 }
 
 #else
@@ -772,19 +819,132 @@ void flash_led(uint8_t count)
     if (count == 0) {
         count = 3;
     }
-    
+
     int8_t i;
     for (i = 0; i < count; ++i) {
         LED_PORT |= _BV(LED);
         for(l = 0; l < (F_CPU / 1000); ++l);
         LED_PORT &= ~_BV(LED);
-        for(l = 0; l < (F_CPU / 1000); ++l); 
+        for(l = 0; l < (F_CPU / 1000); ++l);
     }
-		
+
 }
 
 
 #endif
 
+
+void lcd_put(uint8_t data)
+{
+    LCD |= _BV(EN); // set EN high
+    _delay_us(100);
+
+    LCD = (LCD & 0xF0) + ((data >> 4) & 0x0f); // write high nibble
+
+    LCD_PIN |= _BV(EN); // flip EN low
+    _delay_us(100);
+
+    LCD |= _BV(EN); // set EN high
+    _delay_us(100);
+
+    LCD = (LCD & 0xF0) | (data & 0x0f); // write low nibble
+
+    LCD_PIN |= _BV(EN); // strobe EN
+    _delay_us(100);
+}
+
+
+void lcd_mode(uint8_t mode)
+{
+    if(mode == LCD_DATA) LCD |= _BV(RS); // RS high to data mode
+    else LCD &= ~_BV(RS); // RS low to command mode
+}
+
+static void lcd_command8(uint8_t data)
+{
+    lcd_mode(LCD_COMMAND); // LCD to command mode
+
+    LCD |= _BV(EN); // set EN high
+    _delay_us(100);
+
+    LCD = (LCD & 0xF0) | ((data >> 4) & 0x0f); // write high nibble
+
+    LCD_PIN |= _BV(EN); // flip EN low
+    _delay_us(100);
+}
+
+void lcd_init(void)
+{
+    // set the port to proper direction
+    LCD &= ~(0x0f | _BV(EN) | _BV(RS));
+    LCD_DDR |= 0x0f | _BV(EN) | _BV(RS);
+
+    _delay_ms(20);
+
+    lcd_mode(LCD_COMMAND);
+
+    lcd_command8(0x30); //init 5ms delay
+    _delay_ms(5);
+
+    lcd_command8(0x30); //init 100us delay
+    _delay_us(100);
+
+    lcd_command8(0x30); //init 39us delay
+    _delay_us(45);
+
+    lcd_command8(0x20); //preliminary 4bit mode
+    _delay_us(45);
+
+    lcd_put(0x28); //4bit mode, 2 lines 39us delay
+    _delay_us(45);
+
+    lcd_put(0x08); //display off
+    _delay_us(45);
+
+    lcd_put(0x0C); //display on
+    _delay_us(45);
+
+    lcd_put(0x01); //clear
+    _delay_us(2000);
+
+    lcd_put(0x06); //write mode (shift cursor and keep display)
+    _delay_us(39);
+
+    lcd_line(0);
+    lcd_mode(LCD_DATA);
+}
+
+void lcd_line(uint8_t line)
+{
+    lcd_mode(LCD_COMMAND);
+    lcd_put(0x80+line*0x40);
+    _delay_us(45);
+}
+
+void lcd_write(const uint8_t* str)
+{
+    lcd_mode(LCD_DATA);
+
+    while(*str){
+        lcd_put(*str);
+        _delay_us(50);
+        str++;
+    }
+}
+
+void lcd_pgm_write(const uint8_t* str)
+{
+    uint8_t c;
+
+    lcd_mode(LCD_DATA);
+    while(1) {
+        c = pgm_read_byte(str);
+        if(c==0) return;
+
+        lcd_put(c);
+        _delay_us(50);
+        str++;
+    }
+}
 
 /* end of file ATmegaBOOT.c */

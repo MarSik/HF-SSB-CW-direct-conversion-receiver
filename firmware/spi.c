@@ -1,5 +1,6 @@
 #include <avr/io.h>
 #include <util/delay.h>
+#include "config.h"
 #include "spi.h"
 
 void spi_init(void)
