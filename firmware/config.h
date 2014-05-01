@@ -11,11 +11,11 @@
 /* Tuner box configuration
  */
 #define BANK1 BANK_COUT
-#define BANK2 BANK_CIN
+#define BANK2 BANK_L
 #define BANK3 BANK_L
 
 #define BANK1_INVERT 0
-#define BANK2_INVERT 0
+#define BANK2_INVERT 1
 #define BANK3_INVERT 1
 
 /* SPI configuration

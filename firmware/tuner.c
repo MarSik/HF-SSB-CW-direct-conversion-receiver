@@ -25,18 +25,23 @@ const char* PICO = "pnum kM";
 // Table for tuning records
 tuning_record tuner_records[256] EEMEM;
 
-void tuner_write(void)
+void tuner_write_raw(uint8_t b1, uint8_t b2, uint8_t b3)
 {
     led_on(LEDA);
     spi_begin();
     /* Driver is inverting signal so non-inverted means we have to
        send the inverted value. Inverted means we have to send the
        normal value */
-    spi_transfer((BANK3_INVERT) ? banks[BANK3] : ~banks[BANK3]);
-    spi_transfer((BANK2_INVERT) ? banks[BANK2] : ~banks[BANK2]);
-    spi_transfer((BANK1_INVERT) ? banks[BANK1] : ~banks[BANK1]);
+    spi_transfer((BANK3_INVERT) ? b3 : ~b3);
+    spi_transfer((BANK2_INVERT) ? b2 : ~b2);
+    spi_transfer((BANK1_INVERT) ? b1 : ~b1);
     spi_end();
     led_off(LEDA);
+}
+
+void tuner_write(void)
+{
+    tuner_write_raw(banks[BANK1], banks[BANK2], banks[BANK3]);
 }
 
 void tuner_save(void)
@@ -69,7 +74,7 @@ void tuner_init(void)
 
         // Set 1 for a single relay
         banks[(i & 0x18) >> 3] = 1 << (i & 0x7);
-        tuner_write();
+        tuner_write_raw(banks[0], banks[1], banks[2]);
 
         _delay_ms(50);
 
