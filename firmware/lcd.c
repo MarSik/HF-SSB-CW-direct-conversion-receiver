@@ -6,7 +6,18 @@
 #include "config.h"
 #include "lcd.h"
 
-static const uint8_t lcd_c_mem[] PROGMEM = {0x1f, 0x1f, 0xe, 0x4, 0xa, 0xe, 0xe, 0x1f, 0};
+/* Custom characters
+   7 character lines
+   1 cursor line (displayed after ORed with cursor)
+   5 bits per line
+
+   0 bit = dark
+   1 bit = light
+*/
+static const uint8_t lcd_c_mem[] PROGMEM = {0x1f, 0x1f, 0x0e, 0x04, 0x0a, 0x0e, 0x0e,
+                                            0x1f};
+static const uint8_t lcd_c_up[] PROGMEM = {0x04, 0x0e, 0x1f, 0x04, 0x04, 0x04, 0x00,
+                                           0x00};
 
 void lcd_put(uint8_t data)
 {
@@ -86,7 +97,10 @@ void lcd_init(void)
 
     /* load new characters */
     lcd_newchar(0);
-    lcd_pgm_write(lcd_c_mem);
+    lcd_pgm_write_len(lcd_c_mem, 8);
+
+    lcd_newchar(1);
+    lcd_pgm_write_len(lcd_c_up, 8);
 
     lcd_line(0);
     lcd_mode(LCD_DATA);
@@ -146,6 +160,20 @@ void lcd_pgm_write(const uint8_t* str)
         str++;
     }
 }
+
+void lcd_pgm_write_len(const uint8_t* str, uint8_t len)
+{
+    uint8_t c;
+
+    lcd_mode(LCD_DATA);
+    while(len--) {
+        c = pgm_read_byte(str);
+        lcd_put(c);
+        _delay_us(50);
+        str++;
+    }
+}
+
 
 void lcd_newchar(uint8_t idx)
 {

@@ -28,6 +28,7 @@ uint8_t buffer[9];
 #define ROTARY_LOOKUP_NEXT 0b0010100000010100
 
 void renderer_default(void);
+void renderer_step(void);
 void renderer_set_l(void);
 void renderer_set_c(void);
 
@@ -35,7 +36,7 @@ typedef void (*renderer_func)(void);
 
 static renderer_func renderer[] = {
     [INTF_FREQ] = renderer_default,
-    [INTF_STEP] = renderer_default,
+    [INTF_STEP] = renderer_step,
     [INTF_TUNER_L] = renderer_set_l,
     [INTF_TUNER_C] = renderer_set_c
 };
@@ -89,7 +90,7 @@ ISR(PCINT3_vect){
     if (ROTARY_LOOKUP_NEXT & _BV(r)) {
         substep++;
         if (substep>=SUBSTEP) {
-            if (interface_mode == INTF_STEP) step_up();
+            if (interface_mode == INTF_STEP) step_down();
             else if (interface_mode == INTF_TUNER_C) tuner_up(BANK_COUT);
             else if (interface_mode == INTF_TUNER_L) tuner_up(BANK_L);
             else freq_step(F_DIR_UP); // increase freq
@@ -101,7 +102,7 @@ ISR(PCINT3_vect){
     else if (ROTARY_LOOKUP_PREV & _BV(r)) {
         substep--;
         if (substep<=-SUBSTEP) {
-            if (interface_mode == INTF_STEP) step_down();
+            if (interface_mode == INTF_STEP) step_up();
             else if (interface_mode == INTF_TUNER_C) tuner_down(BANK_COUT);
             else if (interface_mode == INTF_TUNER_L) tuner_down(BANK_L);
             else freq_step(F_DIR_DOWN); // decrease freq
@@ -198,6 +199,40 @@ void renderer_freq(void)
         else lcd_put(' ');
     }
     else lcd_pgm_write(s_initializing);
+}
+
+void renderer_step(void)
+{
+    const uint8_t *extra = NULL;
+
+    renderer_freq();
+
+    lcd_line(1);
+    lcd_mode(LCD_DATA);
+
+
+    uint8_t logstep = 15;
+
+    while (logstep > 0) {
+        lcd_put(' ');
+        logstep--;
+    }
+
+    lcd_line(1);
+    lcd_mode(LCD_DATA);
+
+    freq_t step = f_full(f_step);
+    while (step > 1) {
+        logstep++;
+        step /= 10;
+    }
+
+    logstep = 9 - (logstep + logstep / 3);
+    while (logstep > 0) {
+        lcd_put(' ');
+        logstep--;
+    }
+    lcd_put(1);
 }
 
 void renderer_default(void)
