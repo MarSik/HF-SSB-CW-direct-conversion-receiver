@@ -33,6 +33,7 @@ void lcd_eep_write(const uint8_t* str);
 
 /* send DATA string from PROGMEM to LCD */
 void lcd_pgm_write(const uint8_t* str);
+void lcd_pgm_write_len(const uint8_t* str, uint8_t len);
 
 /* prepare lcd for receiving a new character
    id must be 0 to 7

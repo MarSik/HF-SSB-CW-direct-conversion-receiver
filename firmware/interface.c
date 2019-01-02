@@ -31,6 +31,7 @@ void renderer_default(void);
 void renderer_step(void);
 void renderer_set_l(void);
 void renderer_set_c(void);
+void renderer_set_mode(void);
 
 typedef void (*renderer_func)(void);
 
@@ -38,7 +39,8 @@ static renderer_func renderer[] = {
     [INTF_FREQ] = renderer_default,
     [INTF_STEP] = renderer_step,
     [INTF_TUNER_L] = renderer_set_l,
-    [INTF_TUNER_C] = renderer_set_c
+    [INTF_TUNER_C] = renderer_set_c,
+    [INTF_TUNER_MODE] = renderer_set_mode
 };
 
 inline void debounce(void)
@@ -93,6 +95,7 @@ ISR(PCINT3_vect){
             if (interface_mode == INTF_STEP) step_down();
             else if (interface_mode == INTF_TUNER_C) tuner_up(BANK_COUT);
             else if (interface_mode == INTF_TUNER_L) tuner_up(BANK_L);
+            else if (interface_mode == INTF_TUNER_MODE) tuner_next_mode();
             else freq_step(F_DIR_UP); // increase freq
             state |= LCD_REDRAW;
             substep -= SUBSTEP;
@@ -105,6 +108,7 @@ ISR(PCINT3_vect){
             if (interface_mode == INTF_STEP) step_up();
             else if (interface_mode == INTF_TUNER_C) tuner_down(BANK_COUT);
             else if (interface_mode == INTF_TUNER_L) tuner_down(BANK_L);
+            else if (interface_mode == INTF_TUNER_MODE) tuner_prev_mode();
             else freq_step(F_DIR_DOWN); // decrease freq
             state |= LCD_REDRAW;
             substep += SUBSTEP;
@@ -131,6 +135,13 @@ ISR(PCINT2_vect){
         tuner_write();
         tuner_save();
         state |= LCD_REDRAW;
+    }
+
+    if ((BUTTON_PIN & _BV(BUTTON_2)) == 0
+           && (BUTTON_PIN & _BV(BUTTON_3)) == 0) {
+        state |= LCD_REDRAW | LCD_CLEAR;
+        interface_mode_set(INTF_TUNER_MODE);
+        led_on(LEDB);
     }
 
     if ((BUTTON_PIN & _BV(BUTTON_2)) == 0) {
@@ -321,6 +332,27 @@ void renderer_set_c(void)
     lcd_write(buffer);
     lcd_put(PICO[0]);
     lcd_put('F');
+}
+
+static const char* T_MODE EEMEM = "tuner mode:";
+static const char* T_VERTICAL EEMEM = "\x02 vertical";
+static const char* T_SYMETRIC EEMEM = "\x03 symetric";
+
+void renderer_set_mode(void)
+{
+    lcd_line(0);
+    lcd_mode(LCD_DATA);
+
+    lcd_eep_write(T_MODE);
+
+    lcd_line(1);
+    lcd_mode(LCD_DATA);
+
+    if (tuner_get_mode() == SYMETRIC) {
+        lcd_eep_write(T_SYMETRIC);
+    } else {
+        lcd_eep_write(T_VERTICAL);
+    }
 }
 
 void renderer_set_l(void)

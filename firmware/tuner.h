@@ -24,6 +24,23 @@ void tuner_init(void);
 void tuner_up(uint8_t bank);
 void tuner_down(uint8_t bank);
 
+typedef enum {
+ SYMETRIC = 0,
+ ASYMETRIC = 1,
+ ENDMODE = 2
+} antenna_mode;
+
+void tuner_mode(antenna_mode mode);
+antenna_mode tuner_get_mode(void);
+
+inline void tuner_next_mode(void) {
+    tuner_mode((tuner_get_mode() + 1) % ENDMODE);
+}
+
+inline void tuner_prev_mode(void) {
+    tuner_mode((tuner_get_mode() - 1) % ENDMODE);
+}
+
 #define BANK_CIN 0
 #define BANK_L 1
 #define BANK_COUT 2

@@ -18,6 +18,10 @@ static const uint8_t lcd_c_mem[] PROGMEM = {0x1f, 0x1f, 0x0e, 0x04, 0x0a, 0x0e, 
                                             0x1f};
 static const uint8_t lcd_c_up[] PROGMEM = {0x04, 0x0e, 0x1f, 0x04, 0x04, 0x04, 0x00,
                                            0x00};
+static const uint8_t lcd_c_vertical[] PROGMEM = {0x04, 0x0e, 0x1f, 0x04, 0x04, 0x04, 0x00,
+                                           0x00};
+static const uint8_t lcd_c_symetric[] PROGMEM = {0x04, 0x0e, 0x1f, 0x04, 0x04, 0x04, 0x00,
+                                           0x00};
 
 void lcd_put(uint8_t data)
 {
@@ -101,6 +105,12 @@ void lcd_init(void)
 
     lcd_newchar(1);
     lcd_pgm_write_len(lcd_c_up, 8);
+
+    lcd_newchar(2);
+    lcd_pgm_write_len(lcd_c_vertical, 8);
+
+    lcd_newchar(3);
+    lcd_pgm_write_len(lcd_c_symetric, 8);
 
     lcd_line(0);
     lcd_mode(LCD_DATA);

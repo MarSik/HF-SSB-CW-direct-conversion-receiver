@@ -22,6 +22,7 @@ typedef enum {
     INTF_FREQ = 0,
     INTF_TUNER_C,
     INTF_TUNER_L,
+    INTF_TUNER_MODE,
     INTF_STEP
 } intf_mode_t;
 

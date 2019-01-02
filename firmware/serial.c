@@ -7,6 +7,7 @@ void serial_init()
 {
     // Initialize both hw serial ports
 
+#ifdef SERIAL1_ENABLE
     /* UART0 is shared with bootloader
        use the same settings
     */
@@ -15,6 +16,14 @@ void serial_init()
     UCSR0B = _BV(RXEN0) | _BV(TXEN0);
     UCSR0C = _BV(UCSZ00) | _BV(UCSZ01);
 
+    /* Enable internal pull-up resistor on RX pins,
+       in order to supress line noise.
+    */
+    SERIAL1_DDR &= ~_BV(SERIAL1_RX);
+    SERIAL1_PORT |= _BV(SERIAL1_RX);
+#endif
+
+#ifdef SERIAL2_ENABLE
     /* UART1
     */
     UBRR1L = (uint8_t)(F_CPU/(BAUD_RATE1*16L)-1);
@@ -22,11 +31,13 @@ void serial_init()
     UCSR1B = _BV(RXEN1) | _BV(TXEN1);
     UCSR1C = _BV(UCSZ10) | _BV(UCSZ11);
 
-    /* Enable internal pull-up resistor on pins D0, D2 (RX),
+    /* Enable internal pull-up resistor on RX pins,
        in order to supress line noise.
     */
-    DDRD &= ~(_BV(PIND0) | _BV(PIND2));
-    PORTD |= _BV(PIND0) | _BV(PIND2);
+    SERIAL2_DDR &= ~_BV(SERIAL2_RX);
+    SERIAL2_PORT |= _BV(SERIAL2_RX);
+#endif
+
 }
 
 void serial0_putch(uint8_t ch)

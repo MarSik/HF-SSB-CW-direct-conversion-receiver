@@ -12,6 +12,7 @@
 #include "radio.h"
 
 volatile static uint8_t banks[3] = {0x00, 0x00, 0x00};
+volatile static antenna_mode mode = SYMETRIC;
 
 // Cout is in 10x pF (1 == 0.1pF)
 const static uint16_t cout_values[8] = {37, 75, 147, 303, 576, 1200, 2319, 4807};
@@ -41,7 +42,21 @@ void tuner_write_raw(uint8_t b1, uint8_t b2, uint8_t b3)
 
 void tuner_write(void)
 {
-    tuner_write_raw(banks[BANK1], banks[BANK2], banks[BANK3]);
+    uint8_t bank1_mask, bank2_mask, bank3_mask;
+
+    if (mode == ASYMETRIC) {
+        bank1_mask = BANK1_ASY_MASK;
+        bank2_mask = BANK2_ASY_MASK;
+        bank3_mask = BANK3_ASY_MASK;
+    } else {
+        bank1_mask = BANK1_SYM_MASK;
+        bank2_mask = BANK2_SYM_MASK;
+        bank3_mask = BANK3_SYM_MASK;
+    }
+
+    tuner_write_raw(banks[BANK1] & bank1_mask,
+                    banks[BANK2] & bank2_mask,
+                    banks[BANK3] & bank3_mask);
 }
 
 void tuner_save(void)
@@ -59,6 +74,14 @@ void tuner_up(uint8_t bank)
 void tuner_down(uint8_t bank)
 {
     if (banks[bank] > 0) --banks[bank];
+}
+
+void tuner_mode(antenna_mode new_mode) {
+    mode = new_mode;
+}
+
+antenna_mode tuner_get_mode() {
+    return mode;
 }
 
 void tuner_init(void)

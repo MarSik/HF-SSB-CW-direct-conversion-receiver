@@ -2,11 +2,23 @@
 #define MS_TUNER_CONFIG_H_1404
 
 /* Serial lines
-   UART0 is shared with bootloader and should use
+   UART0 (SERIAL1) is shared with bootloader and should use
    the same settings = 38400 8n1
  */
 #define BAUD_RATE0 38400
+
+#define SERIAL1_ENABLE
+#define SERIAL1_PORT PORTD
+#define SERIAL1_DDR DDRD
+#define SERIAL1_RX 0
+#define SERIAL1_TX 1
+
+#define SERIAL2_ENABLE
 #define BAUD_RATE1 38400
+#define SERIAL2_PORT PORTD
+#define SERIAL2_DDR DDRD
+#define SERIAL2_RX 2
+#define SERIAL2_TX 3
 
 /* Tuner box configuration
  */
@@ -17,6 +29,14 @@
 #define BANK1_INVERT 0
 #define BANK2_INVERT 1
 #define BANK3_INVERT 1
+
+#define BANK1_ASY_MASK 0xFF
+#define BANK2_ASY_MASK 0xFF
+#define BANK3_ASY_MASK 0
+
+#define BANK1_SYM_MASK 0xFF
+#define BANK2_SYM_MASK 0xFF
+#define BANK3_SYM_MASK 0xFF
 
 /* SPI configuration
 */
